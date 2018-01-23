@@ -1,5 +1,6 @@
 import argparse as ap
 import json
+import multiprocessing
 import os
 import shlex
 import shutil
@@ -7,17 +8,11 @@ import subprocess as sp
 import sys
 
 
-# Temporary project root.
-TESTBENCH_ROOT = '/home/ezkovre/csa-testbench'
+TESTBENCH_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
 def load_config(filename):
-    """Load all information from the specified config file.
-
-    Returns:
-        config_dict : a list of dictionaries, each of which contains
-                      information about a specific project to analyze.
-    """
+    """Load all information from the specified config file."""
 
     config_path = os.path.join(TESTBENCH_ROOT, filename)
 
@@ -32,20 +27,16 @@ def load_config(filename):
 
 
 def run_command(cmd):
-    """Wrapper function to handle running system commands.
-
-    Args:
-        cmd : a string containing the command to run.
-
-    Returns:
-        the return code of the process.
-    """
+    """Wrapper function to handle running system commands."""
 
     proc = sp.Popen(shlex.split(cmd), stdin=sp.PIPE, stdout=sp.PIPE,
                     stderr=sp.PIPE)
+
     err = proc.communicate()[1]
+
     if proc.returncode is not 0:
         sys.stderr.write("[ERROR] %s\n" % str(err))
+
     return proc.returncode
 
 
@@ -56,22 +47,14 @@ def clone_project(project, project_dir):
     found in the config file.
 
     If a project already exists, we simply overwrite it.
-
-    Args:
-        project     : a dictionary containing a project's name, repo URL
-                      and its version tag / commit hash,
-        project_dir : path to the project's root directory.
-
-    Returns:
-        a boolean value indicating success (True) or failure (False).
     """
 
     # Check whether the project config contains a version tag or a commit hash.
-    # Heuristic: longer than 20 chars -> commit hash. Otherwise version tag.
-    # FIXME: Is this sensible?
-    commit_hash = False
-    if len(project['tag']) > 20:
+    try:
+        int(project['tag'], base=16)
         commit_hash = True
+    except:
+        commit_hash = False
 
     # If the project folder already exists, remove it.
     if os.path.isdir(project_dir):
@@ -88,7 +71,7 @@ def clone_project(project, project_dir):
                           % (project_dir, project_dir, project['tag'])
     else:
         cmd['clone'] = "git clone %s --branch %s --single-branch --depth 1 %s" \
-                       % (project['url'], project['tag'], project_dir)
+            % (project['url'], project['tag'], project_dir)
 
     # Clone project.
     sys.stderr.write("Checking out '%s'...\n" % project['name'])
@@ -97,12 +80,11 @@ def clone_project(project, project_dir):
         return False
 
     # Checkout specified commit if needed.
-    if commit_hash:
+    if 'checkout' in cmd:
         checkout_failed = run_command(cmd['checkout'])
         if checkout_failed:
             return False
 
-    # Indicate successful completion.
     return True
 
 
@@ -113,30 +95,21 @@ def identify_build_system(project, project_dir):
         - If there's a 'CMakeLists.txt' file at the project root: 'cmake'.
         - If there's an 'autogen.sh' script at the project root: run it.
         - If there's a 'configure' script at the project root: run it,
-          then return with 'makefile'.
+          then return 'makefile'.
+
     The actual build-log generation happens in main().
-
-    Args:
-        project     : a dictionary containing a project's name, repo URL
-                      and its version tag / commit hash,
-        project_dir : path to the project's root directory.
-
-    Returns:
-        (success, build_sys) tuple:
-            success   : a boolean value indicating success or failure,
-            build_sys : a one-word description of the build system.
     """
 
     project_files = os.listdir(project_dir)
     if not project_files:
         sys.stderr.write("[ERROR] No files found in '%s'.\n\n" % project_dir)
-        return (False, 'unknown')
+        return None
 
     if 'CMakeLists.txt' in project_files:
-        return (True, 'cmake')
+        return 'cmake'
 
     if 'Makefile' in project_files:
-        return (True, 'makefile')
+        return 'makefile'
 
     if 'autogen.sh' in project_files:
         # Autogen needs to be executed in the project's root directory.
@@ -144,7 +117,7 @@ def identify_build_system(project, project_dir):
         autogen_failed = run_command("sh autogen.sh")
         os.chdir(os.path.dirname(project_dir))
         if autogen_failed:
-            return (False, '')
+            return None
 
     # Need to re-list files, as autogen might have generated a config script.
     project_files = os.listdir(project_dir)
@@ -154,11 +127,11 @@ def identify_build_system(project, project_dir):
         configure_failed = run_command("./configure")
         os.chdir(os.path.dirname(project_dir))
         if configure_failed:
-            return (False, '')
-        return (True, 'makefile')
+            return None
+        return 'makefile'
 
     sys.stderr.write("[ERROR] Build system cannot be identified.\n\n")
-    return (False, '')
+    return None
 
 
 def check_logged(projects_root):
@@ -166,12 +139,6 @@ def check_logged(projects_root):
 
     Removes any projects that have an empty build-log JSON file
     at the end of the script.
-
-    Args:
-        projects_root : path to the folder containing all projects.
-
-    Returns:
-        list of projects after the completion of the cleaning process.
     """
 
     projects = os.listdir(projects_root)
@@ -193,10 +160,11 @@ def main():
     args = parser.parse_args()
 
     # Check if CodeChecker binary is in $PATH.
-    cc_not_available = run_command("CodeChecker version")
-    if cc_not_available:
+    try:
+        run_command("CodeChecker version")
+    except OSError as oerr:
         sys.stderr.write(
-            "\n[ERROR] CodeChecker is not available as a command.\n\n")
+            "[ERROR] CodeChecker is not available as a command.\n")
         sys.exit(1)
 
     # Load configuration dictionary containing all project information.
@@ -222,8 +190,8 @@ def main():
 
         # Identify build system (CMake / autotools)
         # + run configure script if needed.
-        id_success, build_sys = identify_build_system(project, project_dir)
-        if not id_success:
+        build_sys = identify_build_system(project, project_dir)
+        if not build_sys:
             shutil.rmtree(project_dir)
             continue
 
@@ -241,8 +209,8 @@ def main():
         if build_sys == 'makefile':
             # Generate 'compile_commands.json' using CodeChecker.
             json_path = os.path.join(project_dir, "compile_commands.json")
-            cmd = "CodeChecker log -b 'make -C%s -j8' -o %s" \
-                  % (project_dir, json_path)
+            cmd = "CodeChecker log -b 'make -C%s -j%d' -o %s" \
+                  % (project_dir, multiprocessing.cpu_count(), json_path)
             cc_failed = run_command(cmd)
             if cc_failed:
                 shutil.rmtree(project_dir)
