@@ -49,6 +49,15 @@ def clone_project(project, project_dir):
     If a project already exists, we simply overwrite it.
     """
 
+    # If the project folder already exists, remove it.
+    if os.path.isdir(project_dir):
+        shutil.rmtree(project_dir)
+
+    # If there is no tag specified, we clone the master branch.
+    # This presumes that a master branch exists.
+    if 'tag' not in project:
+        project['tag'] = 'master'
+
     # Check whether the project config contains a version tag or a commit hash.
     try:
         int(project['tag'], base=16)
@@ -56,22 +65,17 @@ def clone_project(project, project_dir):
     except:
         commit_hash = False
 
-    # If the project folder already exists, remove it.
-    if os.path.isdir(project_dir):
-        shutil.rmtree(project_dir)
-
     # If the 'tag' value is a version tag, we can use shallow cloning.
     # With a commit hash, we need to clone everything and then checkout
     # the specified commit.
-    cmd = {}
+    cmd = {
+        'clone': 'git clone %s --depth 1 %s' % (project['url'], project_dir)}
+
     if commit_hash:
-        cmd['clone'] = "git clone %s --depth 1 %s" % (project['url'],
-                                                      project_dir)
-        cmd['checkout'] = "git --git-dir=%s/.git --work-tree=%s checkout %s" \
+        cmd['checkout'] = 'git --git-dir=%s/.git --work-tree=%s checkout %s' \
                           % (project_dir, project_dir, project['tag'])
     else:
-        cmd['clone'] = "git clone %s --branch %s --single-branch --depth 1 %s" \
-            % (project['url'], project['tag'], project_dir)
+        cmd['clone'] += ' --branch %s --single-branch' % project['tag']
 
     # Clone project.
     sys.stderr.write("Checking out '%s'...\n" % project['name'])
