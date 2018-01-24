@@ -202,17 +202,18 @@ def log_project(project_dir):
 def check_project(project, project_dir, config):
     json_path = os.path.join(project_dir, "compile_commands.json")
     result_path = os.path.join(project_dir, "cc_results")
+    coverage_dir = os.path.join(result_path, "coverage")
     cmd = ("CodeChecker analyze '%s' -j%d -o %s -q " +
            "--analyzers clangsa --capture-analysis-output") \
         % (json_path, multiprocessing.cpu_count(), result_path)
-    args_file = None
+    args_file, filename = tempfile.mkstemp()
+    os.write(args_file, " -Xclang -analyzer-config -Xclang record-coverage=%s "
+             % coverage_dir)
     if "clang_sa_args" in project:
-        args_file, filename = tempfile.mkstemp()
         os.write(args_file, project["clang_sa_args"])
-        cmd += " --saargs " + filename
+    cmd += " --saargs " + filename
     run_command(cmd)
-    if args_file:
-        os.close(args_file)
+    os.close(args_file)
     sys.stderr.write("Analysis is done.\n\n")
     tag = project["tag"] if "tag" in project else ""
     name = project["name"] + "_" + tag
