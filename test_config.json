@@ -3,7 +3,8 @@
     {
       "name": "tmux",
       "url": "https://github.com/tmux/tmux.git",
-      "tag": "2.6"
+      "tag": "2.6",
+      "clang_sa_args": "-Xclang -analyzer-stats"
     },
     {
       "name": "bitcoin",
@@ -20,5 +21,10 @@
       "url": "https://github.com/apache/xerces-c.git",
       "tag": "Xerces-C_3_2_0"
     }
-  ]
+  ],
+  "CodeChecker": {
+    "url" : "localhost:8001/Default",
+    "analyze_args" : "",
+    "store_args" : ""
+  }
 }
