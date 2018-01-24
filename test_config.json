@@ -1,0 +1,24 @@
+{
+  "projects": [
+    {
+      "name": "tmux",
+      "url": "https://github.com/tmux/tmux.git",
+      "tag": "2.6"
+    },
+    {
+      "name": "bitcoin",
+      "url": "https://github.com/bitcoin/bitcoin.git",
+      "tag": "v0.15.1"
+    },
+    {
+      "name": "redis",
+      "url": "https://github.com/antirez/redis.git",
+      "tag": "727dd43614ec45e23e2dedbba08b393323feaa4f"
+    },
+    {
+      "name": "xerces-c",
+      "url": "https://github.com/apache/xerces-c.git",
+      "tag": "Xerces-C_3_2_0"
+    }
+  ]
+}
