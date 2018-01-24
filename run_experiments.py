@@ -6,7 +6,7 @@ import shlex
 import shutil
 import subprocess as sp
 import sys
-
+import tempfile
 
 TESTBENCH_ROOT = os.path.dirname(os.path.abspath(__file__))
 
@@ -190,14 +190,39 @@ def log_project(project_dir):
     return True
 
 
+def check_project(project, project_dir, config):
+    json_path = os.path.join(project_dir, "compile_commands.json")
+    result_path = os.path.join(project_dir, "cc_results")
+    cmd = ("CodeChecker analyze '%s' -j%d -o %s -q " +
+           "--analyzers clangsa --capture-analysis-output") \
+          % (json_path, multiprocessing.cpu_count(), result_path)
+    args_file = None
+    if "clang_sa_args" in project:
+        args_file, filename = tempfile.mkstemp()
+        os.write(args_file, project["clang_sa_args"])
+        cmd += " --saargs " + filename
+    run_command(cmd)
+    if args_file:
+        os.close(args_file)
+    sys.stderr.write("Analysis is done.\n\n")
+    tag = project["tag"] if "tag" in project else ""
+    name = project["name"] + "_" + tag
+    cmd = "CodeChecker store %s --url '%s' -n %s --tag %s" \
+          % (result_path, config["CodeChecker"]["url"], name, tag)
+    run_command(cmd)
+    sys.stderr.write("Store is done.\n\n")
+
+
 def main():
     parser = ap.ArgumentParser(description="Build-log generator.\n" +
-                               "\nClones projects and generates their" +
-                               "build-logs into a JSON file.",
+                                           "\nClones projects and generates their" +
+                                           "build-logs into a JSON file.",
                                formatter_class=ap.RawTextHelpFormatter)
     parser.add_argument("--config", metavar="FILE",
                         default='test_config.json',
                         help="JSON file holding a list of projects")
+    # FIXME: optionally pass number of jobs. If not given use all
+    #        CPUs.
     args = parser.parse_args()
 
     # Check if CodeChecker binary is in $PATH.
@@ -229,7 +254,10 @@ def main():
             shutil.rmtree(project_dir)
             continue
 
-        log_project(project_dir)
+        if not log_project(project_dir):
+            continue
+
+        check_project(project, project_dir, config)
 
     logged_projects = check_logged(projects_root)
     sys.stderr.write("\n# of successfully logged projects: %d / %d\n\n"
