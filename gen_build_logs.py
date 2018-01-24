@@ -92,7 +92,7 @@ def clone_project(project, project_dir):
     return True
 
 
-def identify_build_system(project, project_dir):
+def identify_build_system(project_dir):
     """Identifies the build system of a project.
 
     Used heuristics:
@@ -100,6 +100,9 @@ def identify_build_system(project, project_dir):
         - If there's an 'autogen.sh' script at the project root: run it.
         - If there's a 'configure' script at the project root: run it,
           then return 'makefile'.
+
+    FIXME: If no build system found, should we apply the same
+           heuristics for src subfolder if exists?
 
     The actual build-log generation happens in main().
     """
@@ -143,14 +146,48 @@ def check_logged(projects_root):
 
     Removes any projects that have an empty build-log JSON file
     at the end of the script.
+
+    FIXME: instead of listing all directories only list the ones
+           that were in the config file. Or move the check to
+           log_project.
     """
 
     projects = os.listdir(projects_root)
     for project in projects:
         log = os.path.join(projects_root, project, 'compile_commands.json')
-        if not os.path.getsize(log) > 0:
+        if os.path.getsize(log) == 0:
             shutil.rmtree(os.path.join(projects_root, project))
     return os.listdir(projects_root)
+
+
+def log_project(project_dir):
+    # Identify build system (CMake / autotools)
+    # + run configure script if needed.
+    build_sys = identify_build_system(project_dir)
+    if not build_sys:
+        shutil.rmtree(project_dir)
+        return False
+    if build_sys == 'cmake':
+        # Generate 'compile_commands.json' using CMake.
+        cmd = "cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B%s -H%s" \
+              % (project_dir, project_dir)
+        cmake_failed = run_command(cmd)
+        if cmake_failed:
+            shutil.rmtree(project_dir)
+            return False
+        sys.stderr.write("Build log generated successfully.\n\n")
+        return True
+    if build_sys == 'makefile':
+        # Generate 'compile_commands.json' using CodeChecker.
+        json_path = os.path.join(project_dir, "compile_commands.json")
+        cmd = "CodeChecker log -b 'make -C%s -j%d' -o %s" \
+              % (project_dir, multiprocessing.cpu_count(), json_path)
+        cc_failed = run_command(cmd)
+        if cc_failed:
+            shutil.rmtree(project_dir)
+            return False
+        sys.stderr.write("Build log generated successfully.\n\n")
+    return True
 
 
 def main():
@@ -192,34 +229,7 @@ def main():
             shutil.rmtree(project_dir)
             continue
 
-        # Identify build system (CMake / autotools)
-        # + run configure script if needed.
-        build_sys = identify_build_system(project, project_dir)
-        if not build_sys:
-            shutil.rmtree(project_dir)
-            continue
-
-        if build_sys == 'cmake':
-            # Generate 'compile_commands.json' using CMake.
-            cmd = "cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B%s -H%s" \
-                  % (project_dir, project_dir)
-            cmake_failed = run_command(cmd)
-            if cmake_failed:
-                shutil.rmtree(project_dir)
-                continue
-            sys.stderr.write("Build log generated successfully.\n\n")
-            continue
-
-        if build_sys == 'makefile':
-            # Generate 'compile_commands.json' using CodeChecker.
-            json_path = os.path.join(project_dir, "compile_commands.json")
-            cmd = "CodeChecker log -b 'make -C%s -j%d' -o %s" \
-                  % (project_dir, multiprocessing.cpu_count(), json_path)
-            cc_failed = run_command(cmd)
-            if cc_failed:
-                shutil.rmtree(project_dir)
-                continue
-            sys.stderr.write("Build log generated successfully.\n\n")
+        log_project(project_dir)
 
     logged_projects = check_logged(projects_root)
     sys.stderr.write("\n# of successfully logged projects: %d / %d\n\n"
