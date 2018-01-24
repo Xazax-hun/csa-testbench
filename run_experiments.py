@@ -32,12 +32,12 @@ def run_command(cmd):
     proc = sp.Popen(shlex.split(cmd), stdin=sp.PIPE, stdout=sp.PIPE,
                     stderr=sp.PIPE)
 
-    err = proc.communicate()[1]
+    stdout, err = proc.communicate()
 
     if proc.returncode is not 0:
         sys.stderr.write("[ERROR] %s\n" % str(err))
 
-    return proc.returncode
+    return proc.returncode, stdout, err
 
 
 def clone_project(project, project_dir):
@@ -79,15 +79,24 @@ def clone_project(project, project_dir):
 
     # Clone project.
     sys.stderr.write("Checking out '%s'...\n" % project['name'])
-    clone_failed = run_command(cmd['clone'])
+    clone_failed, _, _ = run_command(cmd['clone'])
     if clone_failed:
         return False
 
     # Checkout specified commit if needed.
     if 'checkout' in cmd:
-        checkout_failed = run_command(cmd['checkout'])
+        checkout_failed, _, _ = run_command(cmd['checkout'])
         if checkout_failed:
             return False
+
+    cloc_failed, stdout, _ = run_command("cloc %s --json" % project_dir)
+    if not cloc_failed:
+        try:
+            cloc_json_out = json.loads(stdout)
+            project["LOC"] = cloc_json_out["SUM"]["code"]
+            print("LOC calculated.")
+        except:
+            pass
 
     return True
 
@@ -121,7 +130,7 @@ def identify_build_system(project_dir):
     if 'autogen.sh' in project_files:
         # Autogen needs to be executed in the project's root directory.
         os.chdir(project_dir)
-        autogen_failed = run_command("sh autogen.sh")
+        autogen_failed, _, _ = run_command("sh autogen.sh")
         os.chdir(os.path.dirname(project_dir))
         if autogen_failed:
             return None
@@ -131,7 +140,7 @@ def identify_build_system(project_dir):
 
     if 'configure' in project_files:
         os.chdir(project_dir)
-        configure_failed = run_command("./configure")
+        configure_failed, _, _ = run_command("./configure")
         os.chdir(os.path.dirname(project_dir))
         if configure_failed:
             return None
@@ -171,7 +180,7 @@ def log_project(project_dir):
         # Generate 'compile_commands.json' using CMake.
         cmd = "cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B%s -H%s" \
               % (project_dir, project_dir)
-        cmake_failed = run_command(cmd)
+        cmake_failed, _, _ = run_command(cmd)
         if cmake_failed:
             shutil.rmtree(project_dir)
             return False
@@ -182,7 +191,7 @@ def log_project(project_dir):
         json_path = os.path.join(project_dir, "compile_commands.json")
         cmd = "CodeChecker log -b 'make -C%s -j%d' -o %s" \
               % (project_dir, multiprocessing.cpu_count(), json_path)
-        cc_failed = run_command(cmd)
+        cc_failed, _, _ = run_command(cmd)
         if cc_failed:
             shutil.rmtree(project_dir)
             return False
@@ -259,8 +268,11 @@ def main():
 
         check_project(project, project_dir, config)
 
+        print("Done analyzing %s (%s LOC)" % (project["name"],
+              project["LOC"] if "LOC" in project else "?"))
+
     logged_projects = check_logged(projects_root)
-    sys.stderr.write("\n# of successfully logged projects: %d / %d\n\n"
+    sys.stderr.write("\n# of analyzed logged projects: %d / %d\n\n"
                      % (len(logged_projects), len(config['projects'])))
 
 
