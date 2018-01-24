@@ -204,7 +204,7 @@ def check_project(project, project_dir, config):
     result_path = os.path.join(project_dir, "cc_results")
     cmd = ("CodeChecker analyze '%s' -j%d -o %s -q " +
            "--analyzers clangsa --capture-analysis-output") \
-          % (json_path, multiprocessing.cpu_count(), result_path)
+        % (json_path, multiprocessing.cpu_count(), result_path)
     args_file = None
     if "clang_sa_args" in project:
         args_file, filename = tempfile.mkstemp()
@@ -223,18 +223,15 @@ def check_project(project, project_dir, config):
 
 
 def main():
-    parser = ap.ArgumentParser(description="Build-log generator.\n" +
-                                           "\nClones projects and generates their" +
-                                           "build-logs into a JSON file.",
+    parser = ap.ArgumentParser(description="Run differential analysis " +
+                                           "experiment on a set of projects.",
                                formatter_class=ap.RawTextHelpFormatter)
     parser.add_argument("--config", metavar="FILE",
                         default='test_config.json',
                         help="JSON file holding a list of projects")
-    # FIXME: optionally pass number of jobs. If not given use all
-    #        CPUs.
+    # FIXME: optionally pass number of jobs. If not given use all CPUs.
     args = parser.parse_args()
 
-    # Check if CodeChecker binary is in $PATH.
     try:
         run_command("CodeChecker version")
     except OSError as oerr:
@@ -242,22 +239,18 @@ def main():
             "[ERROR] CodeChecker is not available as a command.\n")
         sys.exit(1)
 
-    # Load configuration dictionary containing all project information.
     config_path = os.path.join(TESTBENCH_ROOT, args.config)
     sys.stderr.write("\nUsing configuration file '%s'.\n" % config_path)
     config = load_config(config_path)
     sys.stderr.write("Number of projects: %d.\n\n" % len(config['projects']))
 
-    # Check if 'projects' folder exists. Create it if needed.
     projects_root = os.path.join(TESTBENCH_ROOT, 'projects')
     if not os.path.isdir(projects_root):
         os.mkdir(projects_root)
 
     for project in config['projects']:
-        # Path to the root of the currently analyzed project:
         project_dir = os.path.join(projects_root, project['name'])
 
-        # Clone projects (correct version / commit).
         clone_success = clone_project(project, project_dir)
         if not clone_success:
             shutil.rmtree(project_dir)
