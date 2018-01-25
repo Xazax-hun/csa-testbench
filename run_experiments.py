@@ -169,7 +169,7 @@ def check_logged(projects_root):
     return os.listdir(projects_root)
 
 
-def log_project(project_dir):
+def log_project(project_dir, num_jobs):
     # Identify build system (CMake / autotools)
     # + run configure script if needed.
     build_sys = identify_build_system(project_dir)
@@ -190,7 +190,7 @@ def log_project(project_dir):
         # Generate 'compile_commands.json' using CodeChecker.
         json_path = os.path.join(project_dir, "compile_commands.json")
         cmd = "CodeChecker log -b 'make -C%s -j%d' -o %s" \
-              % (project_dir, multiprocessing.cpu_count(), json_path)
+              % (project_dir, num_jobs, json_path)
         cc_failed, _, _ = run_command(cmd)
         if cc_failed:
             shutil.rmtree(project_dir)
@@ -199,13 +199,13 @@ def log_project(project_dir):
     return True
 
 
-def check_project(project, project_dir, config):
+def check_project(project, project_dir, config, num_jobs):
     json_path = os.path.join(project_dir, "compile_commands.json")
     result_path = os.path.join(project_dir, "cc_results")
     coverage_dir = os.path.join(result_path, "coverage")
     cmd = ("CodeChecker analyze '%s' -j%d -o %s -q " +
            "--analyzers clangsa --capture-analysis-output") \
-        % (json_path, multiprocessing.cpu_count(), result_path)
+        % (json_path, num_jobs, result_path)
     args_file, filename = tempfile.mkstemp()
     os.write(args_file, " -Xclang -analyzer-config -Xclang record-coverage=%s "
              % coverage_dir)
@@ -230,7 +230,9 @@ def main():
     parser.add_argument("--config", metavar="FILE",
                         default='test_config.json',
                         help="JSON file holding a list of projects")
-    # FIXME: optionally pass number of jobs. If not given use all CPUs.
+    parser.add_argument("--jobs", metavar="JOBS", type=int,
+                        default=multiprocessing.cpu_count(),
+                        help="number of jobs")
     args = parser.parse_args()
 
     try:
@@ -239,6 +241,10 @@ def main():
         sys.stderr.write(
             "[ERROR] CodeChecker is not available as a command.\n")
         sys.exit(1)
+
+    if args.jobs < 1:
+        sys.stderr.write(
+            "[ERROR] The number of jobs must be a positive integer.\n")
 
     config_path = os.path.join(TESTBENCH_ROOT, args.config)
     sys.stderr.write("\nUsing configuration file '%s'.\n" % config_path)
@@ -257,13 +263,13 @@ def main():
             shutil.rmtree(project_dir)
             continue
 
-        if not log_project(project_dir):
+        if not log_project(project_dir, args.jobs):
             continue
 
-        check_project(project, project_dir, config)
+        check_project(project, project_dir, config, args.jobs)
 
         print("Done analyzing %s (%s LOC)" % (project["name"],
-              project["LOC"] if "LOC" in project else "?"))
+                                 project["LOC"] if "LOC" in project else "?"))
 
     logged_projects = check_logged(projects_root)
     sys.stderr.write("\n# of analyzed logged projects: %d / %d\n\n"
