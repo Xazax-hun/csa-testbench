@@ -1,3 +1,4 @@
+from __future__ import print_function
 import argparse as ap
 import json
 import multiprocessing
@@ -15,29 +16,25 @@ def load_config(filename):
     """Load all information from the specified config file."""
 
     config_path = os.path.join(TESTBENCH_ROOT, filename)
-
     with open(config_path, 'r') as config_file:
         config_dict = json.loads(config_file.read())
-
     if not config_dict:
         sys.stderr.write("[Error] Empty config file.\n")
         sys.exit(1)
-
     return config_dict
 
 
-def run_command(cmd):
+def run_command(cmd, cc=False):
     """Wrapper function to handle running system commands."""
 
     proc = sp.Popen(shlex.split(cmd), stdin=sp.PIPE, stdout=sp.PIPE,
                     stderr=sp.PIPE)
-
-    stdout, err = proc.communicate()
-
-    if proc.returncode is not 0:
-        sys.stderr.write("[ERROR] %s\n" % str(err))
-
-    return proc.returncode, stdout, err
+    stdout, stderr = proc.communicate()
+    # CC usually does not return with 0, but printing empty
+    # error messages in that case is needless.
+    if proc.returncode is not 0 and not cc:
+        sys.stderr.write("[ERROR] %s\n" % str(stderr))
+    return proc.returncode, stdout, stderr
 
 
 def clone_project(project, project_dir):
@@ -69,34 +66,34 @@ def clone_project(project, project_dir):
     # With a commit hash, we need to clone everything and then checkout
     # the specified commit.
     cmd = {
-        'clone': 'git clone %s --depth 1 %s' % (project['url'], project_dir)}
+        'clone': 'git clone %s %s' % (project['url'], project_dir)}
 
     if commit_hash:
-        cmd['checkout'] = 'git --git-dir=%s/.git --work-tree=%s checkout %s' \
-                          % (project_dir, project_dir, project['tag'])
+        cmd['checkout'] = 'git -C %s checkout %s' % (
+            project_dir, project['tag'])
     else:
-        cmd['clone'] += ' --branch %s --single-branch' % project['tag']
+        cmd['clone'] += ' --depth 1 --branch %s --single-branch' % project['tag']
 
-    # Clone project.
-    sys.stderr.write("Checking out '%s'...\n" % project['name'])
+    print("[%s] Checking out project... " % project['name'], end="")
+    sys.stdout.flush()
     clone_failed, _, _ = run_command(cmd['clone'])
     if clone_failed:
         return False
-
-    # Checkout specified commit if needed.
     if 'checkout' in cmd:
         checkout_failed, _, _ = run_command(cmd['checkout'])
         if checkout_failed:
             return False
+    print("Done.")
 
     cloc_failed, stdout, _ = run_command("cloc %s --json" % project_dir)
     if not cloc_failed:
         try:
             cloc_json_out = json.loads(stdout)
             project["LOC"] = cloc_json_out["SUM"]["code"]
-            print("LOC calculated.")
         except:
             pass
+    print("[%s] LOC: %d." % (project['name'],
+                             project['LOC'] if 'LOC' in project else '?'))
 
     return True
 
@@ -118,7 +115,7 @@ def identify_build_system(project_dir):
 
     project_files = os.listdir(project_dir)
     if not project_files:
-        sys.stderr.write("[ERROR] No files found in '%s'.\n\n" % project_dir)
+        sys.stderr.write("[ERROR] No files found in '%s'.\n" % project_dir)
         return None
 
     if 'CMakeLists.txt' in project_files:
@@ -146,7 +143,7 @@ def identify_build_system(project_dir):
             return None
         return 'makefile'
 
-    sys.stderr.write("[ERROR] Build system cannot be identified.\n\n")
+    sys.stderr.write("[ERROR] Build system cannot be identified.\n")
     return None
 
 
@@ -169,13 +166,13 @@ def check_logged(projects_root):
     return os.listdir(projects_root)
 
 
-def log_project(project_dir, num_jobs):
-    # Identify build system (CMake / autotools)
-    # + run configure script if needed.
+def log_project(project, project_dir, num_jobs):
+    # The following runs the 'configure' script if needed.
     build_sys = identify_build_system(project_dir)
     if not build_sys:
         shutil.rmtree(project_dir)
         return False
+    print("[%s] Generating build log... " % project['name'], end='')
     if build_sys == 'cmake':
         # Generate 'compile_commands.json' using CMake.
         cmd = "cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B%s -H%s" \
@@ -184,7 +181,7 @@ def log_project(project_dir, num_jobs):
         if cmake_failed:
             shutil.rmtree(project_dir)
             return False
-        sys.stderr.write("Build log generated successfully.\n\n")
+        print("Done.")
         return True
     if build_sys == 'makefile':
         # Generate 'compile_commands.json' using CodeChecker.
@@ -195,11 +192,13 @@ def log_project(project_dir, num_jobs):
         if cc_failed:
             shutil.rmtree(project_dir)
             return False
-        sys.stderr.write("Build log generated successfully.\n\n")
+        print("Done.")
     return True
 
 
 def check_project(project, project_dir, config, num_jobs):
+    """Analyze project and store the results with CodeChecker."""
+
     json_path = os.path.join(project_dir, "compile_commands.json")
     result_path = os.path.join(project_dir, "cc_results")
     coverage_dir = os.path.join(result_path, "coverage")
@@ -212,15 +211,18 @@ def check_project(project, project_dir, config, num_jobs):
     if "clang_sa_args" in project:
         os.write(args_file, project["clang_sa_args"])
     cmd += " --saargs " + filename
-    run_command(cmd)
+    print("[%s] Analyzing project... " % project['name'], end="")
+    sys.stdout.flush()
+    run_command(cmd, cc=True)
     os.close(args_file)
-    sys.stderr.write("Analysis is done.\n\n")
+    print("Done.")
+
     tag = project["tag"] if "tag" in project else ""
     name = project["name"] + "_" + tag
     cmd = "CodeChecker store %s --url '%s' -n %s --tag %s" \
           % (result_path, config["CodeChecker"]["url"], name, tag)
-    run_command(cmd)
-    sys.stderr.write("Store is done.\n\n")
+    run_command(cmd, cc=True)
+    print("[%s] Results stored." % project['name'])
 
 
 def main():
@@ -247,9 +249,9 @@ def main():
             "[ERROR] The number of jobs must be a positive integer.\n")
 
     config_path = os.path.join(TESTBENCH_ROOT, args.config)
-    sys.stderr.write("\nUsing configuration file '%s'.\n" % config_path)
+    print("Using configuration file '%s'." % config_path)
     config = load_config(config_path)
-    sys.stderr.write("Number of projects: %d.\n\n" % len(config['projects']))
+    print("Number of projects to process: %d.\n" % len(config['projects']))
 
     projects_root = os.path.join(TESTBENCH_ROOT, 'projects')
     if not os.path.isdir(projects_root):
@@ -257,23 +259,17 @@ def main():
 
     for project in config['projects']:
         project_dir = os.path.join(projects_root, project['name'])
-
-        clone_success = clone_project(project, project_dir)
-        if not clone_success:
+        if not clone_project(project, project_dir):
             shutil.rmtree(project_dir)
             continue
-
-        if not log_project(project_dir, args.jobs):
+        if not log_project(project, project_dir, args.jobs):
             continue
-
         check_project(project, project_dir, config, args.jobs)
 
-        print("Done analyzing %s (%s LOC)" % (project["name"],
-                                 project["LOC"] if "LOC" in project else "?"))
-
     logged_projects = check_logged(projects_root)
-    sys.stderr.write("\n# of analyzed logged projects: %d / %d\n\n"
-                     % (len(logged_projects), len(config['projects'])))
+    print("Number of analyzed projects: %d / %d"
+          % (len(logged_projects), len(config['projects'])))
+    print("Results can be viewed at '%s'." % config['CodeChecker']['url'])
 
 
 if __name__ == '__main__':
