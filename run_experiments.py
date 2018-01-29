@@ -165,7 +165,7 @@ def check_logged(projects_root):
 
     projects = os.listdir(projects_root)
     for project in projects:
-        if os.path.isfile(project)
+        if os.path.isfile(project):
             continue
         log = os.path.join(projects_root, project, 'compile_commands.json')
         if os.path.getsize(log) == 0:
