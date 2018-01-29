@@ -10,6 +10,7 @@ import sys
 import tempfile
 
 from summarize_sa_stats import summ_stats
+from generate_stat_html import print_stats_html
 
 TESTBENCH_ROOT = os.path.dirname(os.path.abspath(__file__))
 
@@ -164,6 +165,8 @@ def check_logged(projects_root):
 
     projects = os.listdir(projects_root)
     for project in projects:
+        if os.path.isfile(project)
+            continue
         log = os.path.join(projects_root, project, 'compile_commands.json')
         if os.path.getsize(log) == 0:
             shutil.rmtree(os.path.join(projects_root, project))
@@ -235,6 +238,8 @@ def post_process_project(project, project_dir, config, num_jobs):
     stats_result = os.path.join(project["result_path"], "stats.json")
     with open(stats_result, "w") as res_file:
         res_file.write(stats)
+    print_stats_html(project["name"], stats_result, os.path.join(os.path.dirname(project_dir), "stats.html"))
+ 
     if os.path.isdir(project["coverage_dir"]):
         cov_result_path = os.path.join(project["result_path"], "coverage_merged")
         try:
