@@ -108,11 +108,11 @@ def summ_stats_on_file(filename, statMap, perHelper, group):
             for key, val in perToUpdate.iteritems():
                 # find the most similar # stat
                 numData = max(actNums.iterkeys(), key=(lambda x: dice_coefficient(x, key)))
-                perHelper[numData] += int(actNums[numData] * 100 / float(val))
+                perHelper[numData] += int(actNums[numData] * float(val))
                 # check for consistency
                 assert (not (key in perToNumMap and perToNumMap[key] != numData))
                 perToNumMap[key] = numData
-                statMap[key] = floor(statMap[numData]) / perHelper[numData] * 100
+                statMap[key] = floor(perHelper[numData]) / statMap[numData]
             actNums = {}
 
 
