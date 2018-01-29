@@ -56,6 +56,8 @@ def summ_stats(dir, verbose=True):
         summ_stats_on_file(dir, statMap, perHelper, group)
     else:
         return statMap
+    if len(statMap) == 0:
+	return statMap
 
     if verbose:
         # print the content of statMap in a formatted way grouped by the statistic producing file
