@@ -24,7 +24,7 @@ def load_config(filename):
     return config_dict
 
 
-def run_command(cmd, cc=False):
+def run_command(cmd, print_error=True):
     """Wrapper function to handle running system commands."""
 
     proc = sp.Popen(shlex.split(cmd), stdin=sp.PIPE, stdout=sp.PIPE,
@@ -32,7 +32,7 @@ def run_command(cmd, cc=False):
     stdout, stderr = proc.communicate()
     # CC usually does not return with 0, but printing empty
     # error messages in that case is needless.
-    if proc.returncode is not 0 and not cc:
+    if proc.returncode is not 0 and print_error:
         sys.stderr.write("[ERROR] %s\n" % str(stderr))
     return proc.returncode, stdout, stderr
 
@@ -74,16 +74,18 @@ def clone_project(project, project_dir):
     else:
         cmd['clone'] += ' --depth 1 --branch %s --single-branch' % project['tag']
 
-    print("[%s] Checking out project... " % project['name'], end="")
+    print("[%s] Checking out project... " % project['name'])
     sys.stdout.flush()
-    clone_failed, _, _ = run_command(cmd['clone'])
+    clone_failed, _, clone_err = run_command(cmd['clone'], print_error=False)
+    if 'master' in str(clone_err):
+        clone_failed, _, _ = run_command(
+            'git clone %s %s' % (project['url'], project_dir))
     if clone_failed:
         return False
     if 'checkout' in cmd:
         checkout_failed, _, _ = run_command(cmd['checkout'])
         if checkout_failed:
             return False
-    print("Done.")
 
     cloc_failed, stdout, _ = run_command("cloc %s --json" % project_dir)
     if not cloc_failed:
@@ -172,7 +174,7 @@ def log_project(project, project_dir, num_jobs):
     if not build_sys:
         shutil.rmtree(project_dir)
         return False
-    print("[%s] Generating build log... " % project['name'], end='')
+    print("[%s] Generating build log... " % project['name'])
     if build_sys == 'cmake':
         # Generate 'compile_commands.json' using CMake.
         cmd = "cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B%s -H%s" \
@@ -181,7 +183,6 @@ def log_project(project, project_dir, num_jobs):
         if cmake_failed:
             shutil.rmtree(project_dir)
             return False
-        print("Done.")
         return True
     if build_sys == 'makefile':
         # Generate 'compile_commands.json' using CodeChecker.
@@ -192,7 +193,6 @@ def log_project(project, project_dir, num_jobs):
         if cc_failed:
             shutil.rmtree(project_dir)
             return False
-        print("Done.")
     return True
 
 
@@ -213,7 +213,7 @@ def check_project(project, project_dir, config, num_jobs):
     cmd += " --saargs " + filename
     print("[%s] Analyzing project... " % project['name'], end="")
     sys.stdout.flush()
-    run_command(cmd, cc=True)
+    run_command(cmd, print_error=False)
     os.close(args_file)
     print("Done.")
 
@@ -221,7 +221,7 @@ def check_project(project, project_dir, config, num_jobs):
     name = project["name"] + "_" + tag
     cmd = "CodeChecker store %s --url '%s' -n %s --tag %s" \
           % (result_path, config["CodeChecker"]["url"], name, tag)
-    run_command(cmd, cc=True)
+    run_command(cmd, print_error=False)
     print("[%s] Results stored." % project['name'])
 
 
