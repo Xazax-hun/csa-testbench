@@ -1,5 +1,6 @@
 import sys
 import re
+import os
 from enum import Enum
 from collections import defaultdict
 from math import log10, floor
@@ -41,59 +42,77 @@ class StatType(Enum):
     PER = '%'
     MAX = 'maximum'
 
-typePattern = ''
-for t in StatType:
-    typePattern += t.value + '|'
-typePattern = typePattern[:-1]
-statPattern = re.compile("([0-9]+(?:\.[0-9]+)?) (.+) - (The (" + typePattern + ") .+)")
 
-actNums = {}
-statMap = defaultdict(int)
-perHelper = defaultdict(int)
-perToNumMap = {}
-perToUpdate = {}
-isInStatBlock = False
-group = {}
-
-f = open(sys.argv[1])
-lines = f.readlines()
-for line in lines:
-    m = statPattern.search(line)
-    if m:
-        isInStatBlock = True
-        statType = StatType(m.group(4))
-        statName = m.group(3)
-        statVal = m.group(1)
-        group[statName] = m.group(2)
-        if statType == StatType.NUM:
-            statMap[statName] += int(statVal)
-            actNums[statName] = int(statVal)
-        elif statType == StatType.MAX:
-            statMap[statName] = max(statMap[statName], int(statVal))
-        elif statType == StatType.PER:
-						perToUpdate[statName] = statVal
-    # when all the other statistics has been processed (to a file) than check the % stats
-    elif isInStatBlock:
-        isInStatBlock = False
-        for key, val in perToUpdate.iteritems():
-            # find the most similar # stat
-            numData = max(actNums.iterkeys(), key=(lambda x: dice_coefficient(x,key)))
-            perHelper[numData] += int(actNums[numData]*100/float(val))
-            # check for consistency
-            assert(not (key in perToNumMap and perToNumMap[key] != numData))
-            perToNumMap[key] = numData
-            statMap[key] = floor(statMap[numData])/perHelper[numData]*100
-        actNums = {}
-
-# print the content of statMap in a formatted way grouped by the statistic producing file
-lastSpace = floor(log10(max(statMap.values()))) + 1
-for key in sorted(group.iterkeys(), key=(lambda x: group[x])):
-    val = statMap[key]
-    if isinstance(val, float):
-        numOfSpaces = int(lastSpace - floor(log10(int(val)))) - 4
-        sys.stdout.write("{0:.3f}".format(val))
+def summ_stats(dir, verbose = True):
+    statMap = defaultdict(int)
+    perHelper = defaultdict(int)
+    group = {}
+    if os.path.isdir(dir):
+        for file in os.listdir(dir):
+            summ_stats_on_file(os.path.join(dir, file), statMap, perHelper, group)
+    elif os.path.isfile(dir):
+        summ_stats_on_file(dir, statMap, perHelper, group)
     else:
-        numOfSpaces = int(lastSpace - floor(log10(val)))
-        sys.stdout.write(str(val))
-    print(' '*numOfSpaces +'- ' + key)
+        return statMap
 
+    if verbose:
+        # print the content of statMap in a formatted way grouped by the statistic producing file
+        lastSpace = floor(log10(max(statMap.values()))) + 1
+        for key in sorted(group.iterkeys(), key=(lambda x: group[x])):
+            val = statMap[key]
+            if isinstance(val, float):
+                numOfSpaces = int(lastSpace - floor(log10(int(val)))) - 4
+                sys.stdout.write("{0:.3f}".format(val))
+            else:
+                numOfSpaces = int(lastSpace - floor(log10(val)))
+                sys.stdout.write(str(val))
+            print(' '*numOfSpaces +'- ' + key)
+
+    return statMap
+
+def summ_stats_on_file(filename, statMap, perHelper, group):
+    typePattern = ''
+    for t in StatType:
+        typePattern += t.value + '|'
+    typePattern = typePattern[:-1]
+    statPattern = re.compile("([0-9]+(?:\.[0-9]+)?) (.+) - (The (" + typePattern + ") .+)")
+    actNums = {}
+    perToNumMap = {}
+    perToUpdate = {}
+    isInStatBlock = False
+    f = open(filename)
+    lines = f.readlines()
+    for line in lines:
+        m = statPattern.search(line)
+        if m:
+            isInStatBlock = True
+            statType = StatType(m.group(4))
+            statName = m.group(3)
+            statVal = m.group(1)
+            group[statName] = m.group(2)
+            if statType == StatType.NUM:
+                statMap[statName] += int(statVal)
+                actNums[statName] = int(statVal)
+            elif statType == StatType.MAX:
+                statMap[statName] = max(statMap[statName], int(statVal))
+            elif statType == StatType.PER:
+               perToUpdate[statName] = statVal
+        # when all the other statistics has been processed (to a file) than check the % stats
+        elif isInStatBlock:
+            isInStatBlock = False
+            for key, val in perToUpdate.iteritems():
+                # find the most similar # stat
+                numData = max(actNums.iterkeys(), key=(lambda x: dice_coefficient(x,key)))
+                perHelper[numData] += int(actNums[numData]*100/float(val))
+                # check for consistency
+                assert(not (key in perToNumMap and perToNumMap[key] != numData))
+                perToNumMap[key] = numData
+                statMap[key] = floor(statMap[numData])/perHelper[numData]*100
+            actNums = {}
+
+def main(argv):
+    summ_stats(sys.argv[1])
+    pass
+
+if __name__ == "__main__":
+    main(sys.argv)
