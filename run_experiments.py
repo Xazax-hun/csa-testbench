@@ -9,6 +9,8 @@ import subprocess as sp
 import sys
 import tempfile
 
+from summarize_sa_stats import summ_stats
+
 TESTBENCH_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -94,7 +96,7 @@ def clone_project(project, project_dir):
             project["LOC"] = cloc_json_out["SUM"]["code"]
         except:
             pass
-    print("[%s] LOC: %d." % (project['name'],
+    print("[%s] LOC: %s." % (project['name'],
                              project['LOC'] if 'LOC' in project else '?'))
 
     return True
@@ -228,7 +230,11 @@ def check_project(project, project_dir, config, num_jobs):
 
 
 def post_process_project(project, project_dir, config, num_jobs):
-    # TODO: Invoke statistics collection
+    stats_dir = os.path.join(project["result_path"], "success")
+    stats = json.dumps(summ_stats(stats_dir, False), indent=2)
+    stats_result = os.path.join(project["result_path"], "stats.json")
+    with open(stats_result, "w") as res_file:
+        res_file.write(stats)
     if os.path.isdir(project["coverage_dir"]):
         cov_result_path = os.path.join(project["result_path"], "coverage_merged")
         try:
