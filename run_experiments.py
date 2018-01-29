@@ -202,6 +202,8 @@ def check_project(project, project_dir, config, num_jobs):
     json_path = os.path.join(project_dir, "compile_commands.json")
     result_path = os.path.join(project_dir, "cc_results")
     coverage_dir = os.path.join(result_path, "coverage")
+    project["result_path"] = result_path
+    project["coverage_dir"] = coverage_dir
     cmd = ("CodeChecker analyze '%s' -j%d -o %s -q " +
            "--analyzers clangsa --capture-analysis-output") \
         % (json_path, num_jobs, result_path)
@@ -223,6 +225,24 @@ def check_project(project, project_dir, config, num_jobs):
           % (result_path, config["CodeChecker"]["url"], name, tag)
     run_command(cmd, print_error=False)
     print("[%s] Results stored." % project['name'])
+
+
+def post_process_project(project, project_dir, config, num_jobs):
+    # TODO: Invoke statistics collection
+    if os.path.isdir(project["coverage_dir"]):
+        cov_result_path = os.path.join(project["result_path"], "coverage_merged")
+        try:
+            run_command("MergeCoverage.py -i %s -o %s" %
+                        (project["coverage_dir"], cov_result_path))
+        except OSError as oerr:
+            print("[Warning] MergeCoverage.py is not found in path.")
+        cov_result_html = os.path.join(project["result_path"], "coverage.html")
+        try:
+            run_command("gcovr -g %s --html --html-details -r %s -o %s" %
+                        (cov_result_path, project_dir, cov_result_html))
+        except OSError as oerr:
+            print("[Warning] gcovr is not found in path.")
+    print("[%s] Post processed." % project['name'])
 
 
 def main():
@@ -265,6 +285,7 @@ def main():
         if not log_project(project, project_dir, args.jobs):
             continue
         check_project(project, project_dir, config, args.jobs)
+        post_process_project(project, project_dir, config, args.jobs)
 
     logged_projects = check_logged(projects_root)
     print("Number of analyzed projects: %d / %d"
