@@ -1,0 +1,65 @@
+{
+  "projects": [
+    {
+      "name": "Curl",
+      "url": "https://github.com/curl/curl.git"
+    },
+    {
+      "name": "FFMPEG",
+      "url": "https://github.com/FFmpeg/FFmpeg.git"
+    },
+    {
+      "name": "Memchached",
+      "url": "https://github.com/memcached/memcached.git"
+    },
+    {
+      "name": "OpenSSL",
+      "url": "https://github.com/openssl/openssl.git"
+    },
+    {
+      "name": "PostgreSQL",
+      "url": "https://github.com/postgres/postgres.git"
+    },
+    {
+      "name": "Redis",
+      "url": "https://github.com/antirez/redis.git"
+    },
+    {
+      "name": "TinyXML2",
+      "url": "https://github.com/leethomason/tinyxml2.git"
+    },
+    {
+      "name": "TMUX",
+      "url": "https://github.com/tmux/tmux.git"
+    },
+    {
+      "name": "Vim",
+      "url": "https://github.com/vim/vim.git"
+    },
+    {
+      "name": "Neovim",
+      "url": "https://github.com/neovim/neovim.git"
+    },
+    {
+      "name": "Bitcoin",
+      "url": "https://github.com/bitcoin/bitcoin.git"
+    },
+    {
+      "name": "LLVM",
+      "url": "https://github.com/llvm-mirror/llvm.git"
+    },
+    {
+      "name": "libWebM",
+      "url": "https://github.com/webmproject/libwebm.git"
+    },
+    {
+      "name": "libpng",
+      "url": "https://github.com/glennrp/libpng.git"
+    }
+  ],
+  "CodeChecker": {
+    "url": "localhost:8001/Default",
+    "analyze_args": "",
+    "store_args": ""
+  }
+}
