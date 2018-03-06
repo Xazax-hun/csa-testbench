@@ -35,7 +35,7 @@ def get_unique_sorted_projects(matches):
 def main():
     parser = ap.ArgumentParser(description="Project list generator.")
     parser.add_argument('pattern', metavar='PATTERN',
-                        help="GitHub search pattern")
+                        help="code search pattern")
     parser.add_argument('langs', metavar='LANGUAGES',
                         help="search for projects written in these languages "
                              "(e.g. 'C C++')")
