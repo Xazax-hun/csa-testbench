@@ -7,6 +7,7 @@
       "configurations": [
         {
           "name": "original",
+          "baseline": true,
           "clang_sa_args": "",
           "analyze_args": "",
           "store_args": ""
@@ -26,12 +27,12 @@
     {
       "name": "redis",
       "url": "https://github.com/antirez/redis.git",
-      "tag": "727dd43614ec45e23e2dedbba08b393323feaa4f"
+      "tag": "727dd43614ec45e23e2dedbba08b393323feaa4f",
+      "make_command": "make"
     },
     {
       "name": "xerces-c",
-      "url": "https://github.com/apache/xerces-c.git",
-      "tag": "Xerces-C_3_2_0"
+      "url": "https://github.com/apache/xerces-c.git"
     }
   ],
   "CodeChecker": {
