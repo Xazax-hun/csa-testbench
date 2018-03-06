@@ -7,23 +7,26 @@ from math import log10, floor
 
 
 def dice_coefficient(a, b):
-    if not len(a) or not len(b): return 0.0
-    """ quick case for true duplicates """
-    if a == b: return 1.0
-    """ if a != b, and a or b are single chars, then they can't possibly match """
-    if len(a) == 1 or len(b) == 1: return 0.0
+    if not len(a) or not len(b):
+        return 0.0
+    # Quick case for true duplicates.
+    if a == b:
+        return 1.0
+    # If a != b, and a or b are single chars, then they can't possibly match.
+    if len(a) == 1 or len(b) == 1:
+        return 0.0
 
-    """ use python list comprehension, preferred over list.append() """
+    # Use python list comprehension, preferred over list.append().
     a_bigram_list = [a[i:i + 2] for i in range(len(a) - 1)]
     b_bigram_list = [b[i:i + 2] for i in range(len(b) - 1)]
 
     a_bigram_list.sort()
     b_bigram_list.sort()
 
-    # assignments to save function calls
+    # Assignments to save function calls.
     lena = len(a_bigram_list)
     lenb = len(b_bigram_list)
-    # initialize match counters
+    # Initialize match counters.
     matches = i = j = 0
     while i < lena and j < lenb:
         if a_bigram_list[i] == b_bigram_list[j]:
@@ -38,7 +41,7 @@ def dice_coefficient(a, b):
     return score
 
 
-# the different type of statistics and their corresponding pattern
+# The different type of statistics and their corresponding pattern.
 class StatType(Enum):
     NUM = '#'
     PER = '%'
@@ -46,74 +49,74 @@ class StatType(Enum):
 
 
 def summ_stats(dir, verbose=True):
-    statMap = defaultdict(int)
-    perHelper = defaultdict(int)
+    stat_map = defaultdict(int)
+    per_helper = defaultdict(int)
     group = {}
     if os.path.isdir(dir):
         for file in os.listdir(dir):
-            summ_stats_on_file(os.path.join(dir, file), statMap, perHelper, group)
+            summ_stats_on_file(os.path.join(dir, file), stat_map, per_helper, group)
     elif os.path.isfile(dir):
-        summ_stats_on_file(dir, statMap, perHelper, group)
+        summ_stats_on_file(dir, stat_map, per_helper, group)
     else:
-        return statMap
-    if len(statMap) == 0:
-	return statMap
+        return stat_map
+    if len(stat_map) == 0:
+        return stat_map
 
     if verbose:
-        # print the content of statMap in a formatted way grouped by the statistic producing file
-        lastSpace = floor(log10(max(statMap.values()))) + 1
+        # print the content of stat_map in a formatted way grouped by the statistic producing file
+        last_space = floor(log10(max(stat_map.values()))) + 1
         for key in sorted(group.iterkeys(), key=(lambda x: group[x])):
-            val = statMap[key]
+            val = stat_map[key]
             if isinstance(val, float):
-                numOfSpaces = int(lastSpace - floor(log10(int(val)))) - 4
+                num_of_spaces = int(last_space - floor(log10(int(val)))) - 4
                 sys.stdout.write("{0:.3f}".format(val))
             else:
-                numOfSpaces = int(lastSpace - floor(log10(val)))
+                num_of_spaces = int(last_space - floor(log10(val)))
                 sys.stdout.write(str(val))
-            print(' ' * numOfSpaces + '- ' + key)
+            print(' ' * num_of_spaces + '- ' + key)
 
-    return statMap
+    return stat_map
 
 
-def summ_stats_on_file(filename, statMap, perHelper, group):
-    typePattern = ''
+def summ_stats_on_file(filename, stat_map, per_helper, group):
+    type_pattern = ''
     for t in StatType:
-        typePattern += t.value + '|'
-    typePattern = typePattern[:-1]
-    statPattern = re.compile("([0-9]+(?:\.[0-9]+)?) (.+) - (The (" + typePattern + ") .+)")
-    actNums = {}
-    perToNumMap = {}
-    perToUpdate = {}
-    isInStatBlock = False
+        type_pattern += t.value + '|'
+    type_pattern = type_pattern[:-1]
+    stat_pattern = re.compile("([0-9]+(?:\.[0-9]+)?) (.+) - (The (" + type_pattern + ") .+)")
+    act_nums = {}
+    per_to_num_map = {}
+    per_to_update = {}
+    is_in_stat_block = False
     f = open(filename)
     lines = f.readlines()
     for line in lines:
-        m = statPattern.search(line)
+        m = stat_pattern.search(line)
         if m:
-            isInStatBlock = True
-            statType = StatType(m.group(4))
-            statName = m.group(3)
-            statVal = m.group(1)
-            group[statName] = m.group(2)
-            if statType == StatType.NUM:
-                statMap[statName] += int(statVal)
-                actNums[statName] = int(statVal)
-            elif statType == StatType.MAX:
-                statMap[statName] = max(statMap[statName], int(statVal))
-            elif statType == StatType.PER:
-                perToUpdate[statName] = statVal
-        # when all the other statistics has been processed (to a file) than check the % stats
-        elif isInStatBlock:
-            isInStatBlock = False
-            for key, val in perToUpdate.iteritems():
-                # find the most similar # stat
-                numData = max(actNums.iterkeys(), key=(lambda x: dice_coefficient(x, key)))
-                perHelper[numData] += int(actNums[numData] * float(val))
-                # check for consistency
-                assert (not (key in perToNumMap and perToNumMap[key] != numData))
-                perToNumMap[key] = numData
-                statMap[key] = floor(perHelper[numData]) / statMap[numData]
-            actNums = {}
+            is_in_stat_block = True
+            stat_type = StatType(m.group(4))
+            stat_name = m.group(3)
+            stat_val = m.group(1)
+            group[stat_name] = m.group(2)
+            if stat_type == StatType.NUM:
+                stat_map[stat_name] += int(stat_val)
+                act_nums[stat_name] = int(stat_val)
+            elif stat_type == StatType.MAX:
+                stat_map[stat_name] = max(stat_map[stat_name], int(stat_val))
+            elif stat_type == StatType.PER:
+                per_to_update[stat_name] = stat_val
+        # When all the other statistics has been processed (to a file) than check the % stats.
+        elif is_in_stat_block:
+            is_in_stat_block = False
+            for key, val in per_to_update.iteritems():
+                # Find the most similar # stat.
+                num_data = max(act_nums.iterkeys(), key=(lambda x: dice_coefficient(x, key)))
+                per_helper[num_data] += int(act_nums[num_data] * float(val))
+                # Check for consistency.
+                assert (not (key in per_to_num_map and per_to_num_map[key] != num_data))
+                per_to_num_map[key] = num_data
+                stat_map[key] = floor(per_helper[num_data]) / stat_map[num_data]
+            act_nums = {}
 
 
 def main(argv):
