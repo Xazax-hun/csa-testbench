@@ -201,6 +201,11 @@ def log_project(project, project_dir, num_jobs):
     return True
 
 
+def collect_args(arg_name, configuration_sources):
+    return " ".join([conf[arg_name] if arg_name in conf else ""
+                     for conf in configuration_sources])
+
+
 def check_project(project, project_dir, config, num_jobs):
     """Analyze project and store the results with CodeChecker."""
 
@@ -218,10 +223,8 @@ def check_project(project, project_dir, config, num_jobs):
         args_file, filename = tempfile.mkstemp()
         os.write(args_file, " -Xclang -analyzer-config -Xclang record-coverage=%s "
                  % coverage_dir)
-        if "clang_sa_args" in project:
-            os.write(args_file, " " + project["clang_sa_args"])
-        if "clang_sa_args" in run_config:
-            os.write(args_file, " " + run_config["clang_sa_args"])
+        conf_sources = [config["CodeChecker"], project, run_config]
+        os.write(args_file, collect_args("clang_sa_args", conf_sources))
         os.close(args_file)
         tag = project["tag"] if "tag" in project else ""
         name = project["name"]
@@ -229,25 +232,19 @@ def check_project(project, project_dir, config, num_jobs):
             name += "_" + tag
         if run_config["name"] != "":
             name += "_" + run_config["name"]
-        print("[%s] Analyzing project... " % name, end="")
+        print("[%s] Analyzing project... " % name)
         sys.stdout.flush()
         cmd = ("CodeChecker analyze '%s' -j%d -o %s -q " +
                "--analyzers clangsa --capture-analysis-output") \
               % (json_path, num_jobs, result_path)
         cmd += " --saargs " + filename
-        if "analyze_args" in config["CodeChecker"]:
-            cmd += " " + config["CodeChecker"]["analyze_args"]
-        if "analyze_args" in run_config:
-            cmd += " " + run_config["analyze_args"]
+        cmd += collect_args("analyze_args", conf_sources)
         run_command(cmd, print_error=False)
         print("Done. Storing results...")
 
         cmd = "CodeChecker store %s --url '%s' -n %s --tag %s" \
               % (result_path, config["CodeChecker"]["url"], name, tag)
-        if "store_args" in config["CodeChecker"]:
-            cmd += " " + config["CodeChecker"]["analyze_args"]
-        if "store_args" in run_config:
-            cmd += " " + run_config["analyze_args"]
+        cmd += collect_args("store_args", conf_sources)
         run_command(cmd, print_error=False)
         print("[%s] Results stored." % name)
 
