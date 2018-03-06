@@ -205,31 +205,51 @@ def check_project(project, project_dir, config, num_jobs):
     """Analyze project and store the results with CodeChecker."""
 
     json_path = os.path.join(project_dir, "compile_commands.json")
-    result_path = os.path.join(project_dir, "cc_results")
-    coverage_dir = os.path.join(result_path, "coverage")
-    project["result_path"] = result_path
-    project["coverage_dir"] = coverage_dir
-    cmd = ("CodeChecker analyze '%s' -j%d -o %s -q " +
-           "--analyzers clangsa --capture-analysis-output") \
-        % (json_path, num_jobs, result_path)
-    args_file, filename = tempfile.mkstemp()
-    os.write(args_file, " -Xclang -analyzer-config -Xclang record-coverage=%s "
-             % coverage_dir)
-    if "clang_sa_args" in project:
-        os.write(args_file, project["clang_sa_args"])
-    cmd += " --saargs " + filename
-    print("[%s] Analyzing project... " % project['name'], end="")
-    sys.stdout.flush()
-    run_command(cmd, print_error=False)
-    os.close(args_file)
-    print("Done.")
+    if "configurations" not in project:
+        project["configurations"] = [{"name": "", "clang_sa_args": ""}]
+    for run_config in project["configurations"]:
+        result_dir = "cc_results"
+        if run_config["name"] != "":
+            result_dir += "_" + run_config["name"]
+        result_path = os.path.join(project_dir, result_dir)
+        coverage_dir = os.path.join(result_path, "coverage")
+        project["result_path"] = result_path
+        project["coverage_dir"] = coverage_dir
+        args_file, filename = tempfile.mkstemp()
+        os.write(args_file, " -Xclang -analyzer-config -Xclang record-coverage=%s "
+                 % coverage_dir)
+        if "clang_sa_args" in project:
+            os.write(args_file, " " + project["clang_sa_args"])
+        if "clang_sa_args" in run_config:
+            os.write(args_file, " " + run_config["clang_sa_args"])
+        os.close(args_file)
+        tag = project["tag"] if "tag" in project else ""
+        name = project["name"]
+        if tag != "":
+            name += "_" + tag
+        if run_config["name"] != "":
+            name += "_" + run_config["name"]
+        print("[%s] Analyzing project... " % name, end="")
+        sys.stdout.flush()
+        cmd = ("CodeChecker analyze '%s' -j%d -o %s -q " +
+               "--analyzers clangsa --capture-analysis-output") \
+              % (json_path, num_jobs, result_path)
+        cmd += " --saargs " + filename
+        if "analyze_args" in config["CodeChecker"]:
+            cmd += " " + config["CodeChecker"]["analyze_args"]
+        if "analyze_args" in run_config:
+            cmd += " " + run_config["analyze_args"]
+        run_command(cmd, print_error=False)
+        print("Done. Storing results...")
 
-    tag = project["tag"] if "tag" in project else ""
-    name = project["name"] + "_" + tag
-    cmd = "CodeChecker store %s --url '%s' -n %s --tag %s" \
-          % (result_path, config["CodeChecker"]["url"], name, tag)
-    run_command(cmd, print_error=False)
-    print("[%s] Results stored." % project['name'])
+        cmd = "CodeChecker store %s --url '%s' -n %s --tag %s" \
+              % (result_path, config["CodeChecker"]["url"], name, tag)
+        if "store_args" in config["CodeChecker"]:
+            cmd += " " + config["CodeChecker"]["analyze_args"]
+        if "store_args" in run_config:
+            cmd += " " + run_config["analyze_args"]
+        run_command(cmd, print_error=False)
+        print("[%s] Results stored." % name)
 
 
 def post_process_project(project, project_dir, config, num_jobs):
@@ -239,7 +259,7 @@ def post_process_project(project, project_dir, config, num_jobs):
     with open(stats_result, "w") as res_file:
         res_file.write(stats)
     print_stats_html(project["name"], stats_result, os.path.join(os.path.dirname(project_dir), "stats.html"))
- 
+
     if os.path.isdir(project["coverage_dir"]):
         cov_result_path = os.path.join(project["result_path"], "coverage_merged")
         try:
