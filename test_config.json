@@ -4,12 +4,24 @@
       "name": "tmux",
       "url": "https://github.com/tmux/tmux.git",
       "tag": "2.6",
-      "clang_sa_args": "-Xclang -analyzer-stats"
+      "configurations": [
+        {
+          "name": "original",
+          "clang_sa_args": "",
+          "analyze_args": "",
+          "store_args": ""
+        },
+        {
+          "name": "with_stats",
+          "clang_sa_args": "-Xclang -analyzer-stats"
+        }
+      ]
     },
     {
       "name": "bitcoin",
       "url": "https://github.com/bitcoin/bitcoin.git",
-      "tag": "v0.15.1"
+      "tag": "v0.15.1",
+      "clang_sa_args": "-Xclang -analyzer-stats"
     },
     {
       "name": "redis",
@@ -23,8 +35,8 @@
     }
   ],
   "CodeChecker": {
-    "url" : "localhost:8001/Default",
-    "analyze_args" : "",
-    "store_args" : ""
+    "url": "localhost:8001/Default",
+    "analyze_args": "",
+    "store_args": ""
   }
 }
