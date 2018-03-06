@@ -40,6 +40,18 @@ def run_command(cmd, print_error=True, cwd=None):
     return proc.returncode, stdout, stderr
 
 
+def count_lines(project, project_dir):
+    cloc_failed, stdout, _ = run_command("cloc %s --json" % project_dir)
+    if not cloc_failed:
+        try:
+            cloc_json_out = json.loads(stdout)
+            project["LOC"] = cloc_json_out["SUM"]["code"]
+        except:
+            pass
+    print("[%s] LOC: %s." % (project['name'],
+                             project['LOC'] if 'LOC' in project else '?'))
+
+
 def clone_project(project, project_dir):
     """Clone a single project.
 
@@ -48,6 +60,9 @@ def clone_project(project, project_dir):
 
     If a project already exists, we simply overwrite it.
     """
+    if 'prepared' in project:
+        count_lines(project, project_dir)
+        return True
 
     # If the project folder already exists, remove it.
     if os.path.isdir(project_dir):
@@ -90,15 +105,7 @@ def clone_project(project, project_dir):
         if checkout_failed:
             return False
 
-    cloc_failed, stdout, _ = run_command("cloc %s --json" % project_dir)
-    if not cloc_failed:
-        try:
-            cloc_json_out = json.loads(stdout)
-            project["LOC"] = cloc_json_out["SUM"]["code"]
-        except:
-            pass
-    print("[%s] LOC: %s." % (project['name'],
-                             project['LOC'] if 'LOC' in project else '?'))
+    count_lines(project, project_dir)
 
     return True
 
@@ -175,6 +182,8 @@ def check_logged(projects_root):
 
 def log_project(project, project_dir, num_jobs):
     # The following runs the 'configure' script if needed.
+    if 'prepared' in project:
+        return True
     if 'make_command' in project:
         build_sys = 'userprovided'
     else:
