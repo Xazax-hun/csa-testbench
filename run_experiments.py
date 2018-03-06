@@ -280,7 +280,7 @@ def main():
     parser.add_argument("--config", metavar="FILE",
                         default='test_config.json',
                         help="JSON file holding a list of projects")
-    parser.add_argument("--jobs", metavar="JOBS", type=int,
+    parser.add_argument("-j", "--jobs", metavar="JOBS", type=int,
                         default=multiprocessing.cpu_count(),
                         help="number of jobs")
     args = parser.parse_args()
