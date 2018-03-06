@@ -27,11 +27,11 @@ def load_config(filename):
     return config_dict
 
 
-def run_command(cmd, print_error=True):
+def run_command(cmd, print_error=True, cwd=None):
     """Wrapper function to handle running system commands."""
 
     proc = sp.Popen(shlex.split(cmd), stdin=sp.PIPE, stdout=sp.PIPE,
-                    stderr=sp.PIPE)
+                    stderr=sp.PIPE, cwd=cwd)
     stdout, stderr = proc.communicate()
     # CC usually does not return with 0, but printing empty
     # error messages in that case is needless.
@@ -175,29 +175,32 @@ def check_logged(projects_root):
 
 def log_project(project, project_dir, num_jobs):
     # The following runs the 'configure' script if needed.
-    build_sys = identify_build_system(project_dir)
+    if 'make_command' in project:
+        build_sys = 'userprovided'
+    else:
+        build_sys = identify_build_system(project_dir)
+    failed = False
     if not build_sys:
-        shutil.rmtree(project_dir)
-        return False
+        failed = True
     print("[%s] Generating build log... " % project['name'])
     if build_sys == 'cmake':
-        # Generate 'compile_commands.json' using CMake.
         cmd = "cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B%s -H%s" \
               % (project_dir, project_dir)
-        cmake_failed, _, _ = run_command(cmd)
-        if cmake_failed:
-            shutil.rmtree(project_dir)
-            return False
-        return True
-    if build_sys == 'makefile':
-        # Generate 'compile_commands.json' using CodeChecker.
+        failed, _, _ = run_command(cmd)
+    elif build_sys == 'makefile':
         json_path = os.path.join(project_dir, "compile_commands.json")
         cmd = "CodeChecker log -b 'make -C%s -j%d' -o %s" \
               % (project_dir, num_jobs, json_path)
-        cc_failed, _, _ = run_command(cmd)
-        if cc_failed:
-            shutil.rmtree(project_dir)
-            return False
+        failed, _, _ = run_command(cmd)
+    elif build_sys == 'userprovided':
+        json_path = os.path.join(project_dir, "compile_commands.json")
+        cmd = "CodeChecker log -b '%s' -o %s" \
+              % (project['make_command'], json_path)
+        failed, _, _ = run_command(cmd, True, project_dir)
+    if failed:
+        shutil.rmtree(project_dir)
+        return False
+
     return True
 
 
