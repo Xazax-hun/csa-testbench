@@ -223,7 +223,10 @@ def check_project(project, project_dir, config, num_jobs):
 
     json_path = os.path.join(project_dir, "compile_commands.json")
     if "configurations" not in project:
-        project["configurations"] = [{"name": "", "clang_sa_args": ""}]
+        if "configurations" in config:
+            project["configurations"] = config["configurations"]
+        else:
+            project["configurations"] = [{"name": "", "clang_sa_args": ""}]
     for run_config in project["configurations"]:
         result_dir = "cc_results"
         if run_config["name"] != "":
