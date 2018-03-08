@@ -10,7 +10,8 @@
           "baseline": true,
           "clang_sa_args": "",
           "analyze_args": "",
-          "store_args": ""
+          "store_args": "",
+          "clang_path": ""
         },
         {
           "name": "with_stats",

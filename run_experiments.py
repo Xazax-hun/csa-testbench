@@ -27,11 +27,11 @@ def load_config(filename):
     return config_dict
 
 
-def run_command(cmd, print_error=True, cwd=None):
+def run_command(cmd, print_error=True, cwd=None, env=None):
     """Wrapper function to handle running system commands."""
 
     proc = sp.Popen(shlex.split(cmd), stdin=sp.PIPE, stdout=sp.PIPE,
-                    stderr=sp.PIPE, cwd=cwd)
+                    stderr=sp.PIPE, cwd=cwd, env=env)
     stdout, stderr = proc.communicate()
     # CC usually does not return with 0, but printing empty
     # error messages in that case is needless.
@@ -218,6 +218,13 @@ def collect_args(arg_name, configuration_sources):
                      for conf in configuration_sources])
 
 
+def update_path(path, env=None):
+    if env is None:
+        env = os.environ
+    env["PATH"] = path + ":" + env["PATH"]
+    return env
+
+
 def check_project(project, project_dir, config, num_jobs):
     """Analyze project and store the results with CodeChecker."""
 
@@ -249,18 +256,21 @@ def check_project(project, project_dir, config, num_jobs):
             name += "_" + run_config["name"]
         print("[%s] Analyzing project... " % name)
         sys.stdout.flush()
+        env = None
+        if "clang_path" in run_config:
+            env = update_path(run_config["clang_path"])
         cmd = ("CodeChecker analyze '%s' -j%d -o %s -q " +
                "--analyzers clangsa --capture-analysis-output") \
               % (json_path, num_jobs, result_path)
         cmd += " --saargs " + filename
         cmd += collect_args("analyze_args", conf_sources)
-        run_command(cmd, print_error=False)
+        run_command(cmd, print_error=False, env=env)
         print("Done. Storing results...")
 
         cmd = "CodeChecker store %s --url '%s' -n %s --tag %s" \
               % (result_path, config["CodeChecker"]["url"], name, tag)
         cmd += collect_args("store_args", conf_sources)
-        run_command(cmd, print_error=False)
+        run_command(cmd, print_error=False, env=env)
         print("[%s] Results stored." % name)
 
 
