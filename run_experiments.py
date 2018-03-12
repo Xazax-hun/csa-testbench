@@ -276,14 +276,18 @@ def check_project(project, project_dir, config, num_jobs):
 
 
 def post_process_project(project, project_dir, config, num_jobs):
+    stats_path = os.path.join(os.path.dirname(project_dir), "stats.html")
+    try:
+        os.remove(stats_path)
+    except OSError:
+        pass
     for run_config in project["configurations"]:
         stats_dir = os.path.join(run_config["result_path"], "success")
         stats = json.dumps(summ_stats(stats_dir, False), indent=2)
         stats_result = os.path.join(run_config["result_path"], "stats.json")
         with open(stats_result, "w") as res_file:
             res_file.write(stats)
-        print_stats_html(run_config["full_name"], stats_result,
-                         os.path.join(os.path.dirname(project_dir), "stats.html"))
+        print_stats_html(run_config["full_name"], stats_result, stats_path)
 
         if os.path.isdir(run_config["coverage_dir"]):
             cov_result_path = os.path.join(run_config["result_path"], "coverage_merged")
