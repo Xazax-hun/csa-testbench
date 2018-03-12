@@ -276,19 +276,13 @@ def check_project(project, project_dir, config, num_jobs):
 
 
 def post_process_project(project, project_dir, config, num_jobs):
-    stats_path = os.path.join(os.path.dirname(project_dir), "stats.html")
+    stats_html = os.path.join(os.path.dirname(project_dir), "stats.html")
     try:
-        os.remove(stats_path)
+        os.remove(stats_html)
     except OSError:
         pass
     for run_config in project["configurations"]:
-        stats_dir = os.path.join(run_config["result_path"], "success")
-        stats = json.dumps(summ_stats(stats_dir, False), indent=2)
-        stats_result = os.path.join(run_config["result_path"], "stats.json")
-        with open(stats_result, "w") as res_file:
-            res_file.write(stats)
-        print_stats_html(run_config["full_name"], stats_result, stats_path)
-
+        cov_result_html = None
         if os.path.isdir(run_config["coverage_dir"]):
             cov_result_path = os.path.join(run_config["result_path"], "coverage_merged")
             try:
@@ -302,6 +296,16 @@ def post_process_project(project, project_dir, config, num_jobs):
                             (cov_result_path, project_dir, cov_result_html))
             except OSError as oerr:
                 print("[Warning] gcovr is not found in path.")
+
+        stats_dir = os.path.join(run_config["result_path"], "success")
+        stats = summ_stats(stats_dir, False)
+        if cov_result_html:
+            stats["coverage link"] = cov_result_html
+        stats_result = os.path.join(run_config["result_path"], "stats.json")
+        with open(stats_result, "w") as res_file:
+            res_file.write(json.dumps(stats, indent=2))
+        print_stats_html(run_config["full_name"], stats_result, stats_html)
+
         print("[%s] Post processed." % run_config['full_name'])
 
 
