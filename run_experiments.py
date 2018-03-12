@@ -240,8 +240,8 @@ def check_project(project, project_dir, config, num_jobs):
             result_dir += "_" + run_config["name"]
         result_path = os.path.join(project_dir, result_dir)
         coverage_dir = os.path.join(result_path, "coverage")
-        project["result_path"] = result_path
-        project["coverage_dir"] = coverage_dir
+        run_config["result_path"] = result_path
+        run_config["coverage_dir"] = coverage_dir
         args_file, filename = tempfile.mkstemp()
         os.write(args_file, " -Xclang -analyzer-config -Xclang record-coverage=%s "
                  % coverage_dir)
@@ -254,6 +254,7 @@ def check_project(project, project_dir, config, num_jobs):
             name += "_" + tag
         if run_config["name"] != "":
             name += "_" + run_config["name"]
+        run_config["full_name"] = name
         print("[%s] Analyzing project... " % name)
         sys.stdout.flush()
         env = None
@@ -275,27 +276,29 @@ def check_project(project, project_dir, config, num_jobs):
 
 
 def post_process_project(project, project_dir, config, num_jobs):
-    stats_dir = os.path.join(project["result_path"], "success")
-    stats = json.dumps(summ_stats(stats_dir, False), indent=2)
-    stats_result = os.path.join(project["result_path"], "stats.json")
-    with open(stats_result, "w") as res_file:
-        res_file.write(stats)
-    print_stats_html(project["name"], stats_result, os.path.join(os.path.dirname(project_dir), "stats.html"))
+    for run_config in project["configurations"]:
+        stats_dir = os.path.join(run_config["result_path"], "success")
+        stats = json.dumps(summ_stats(stats_dir, False), indent=2)
+        stats_result = os.path.join(run_config["result_path"], "stats.json")
+        with open(stats_result, "w") as res_file:
+            res_file.write(stats)
+        print_stats_html(run_config["full_name"], stats_result,
+                         os.path.join(os.path.dirname(project_dir), "stats.html"))
 
-    if os.path.isdir(project["coverage_dir"]):
-        cov_result_path = os.path.join(project["result_path"], "coverage_merged")
-        try:
-            run_command("MergeCoverage.py -i %s -o %s" %
-                        (project["coverage_dir"], cov_result_path))
-        except OSError as oerr:
-            print("[Warning] MergeCoverage.py is not found in path.")
-        cov_result_html = os.path.join(project["result_path"], "coverage.html")
-        try:
-            run_command("gcovr -g %s --html --html-details -r %s -o %s" %
-                        (cov_result_path, project_dir, cov_result_html))
-        except OSError as oerr:
-            print("[Warning] gcovr is not found in path.")
-    print("[%s] Post processed." % project['name'])
+        if os.path.isdir(run_config["coverage_dir"]):
+            cov_result_path = os.path.join(run_config["result_path"], "coverage_merged")
+            try:
+                run_command("MergeCoverage.py -i %s -o %s" %
+                            (run_config["coverage_dir"], cov_result_path))
+            except OSError as oerr:
+                print("[Warning] MergeCoverage.py is not found in path.")
+            cov_result_html = os.path.join(run_config["result_path"], "coverage.html")
+            try:
+                run_command("gcovr -g %s --html --html-details -r %s -o %s" %
+                            (cov_result_path, project_dir, cov_result_html))
+            except OSError as oerr:
+                print("[Warning] gcovr is not found in path.")
+        print("[%s] Post processed." % run_config['full_name'])
 
 
 def main():
