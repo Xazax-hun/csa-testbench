@@ -281,6 +281,8 @@ def post_process_project(project, project_dir, config, num_jobs):
         os.remove(stats_html)
     except OSError:
         pass
+    _, stdout, _ = run_command("CodeChecker cmd runs --url %s -o json" % config['CodeChecker']['url'])
+    runs = json.loads(stdout)
     for run_config in project["configurations"]:
         cov_result_html = None
         if os.path.isdir(run_config["coverage_dir"]):
@@ -298,9 +300,28 @@ def post_process_project(project, project_dir, config, num_jobs):
                 print("[Warning] gcovr is not found in path.")
 
         stats_dir = os.path.join(run_config["result_path"], "success")
+
+        # Statistics from the Analyzer engine (if enabled).
         stats = summ_stats(stats_dir, False)
+
+        # Additional statistics.
         if cov_result_html:
-            stats["coverage link"] = cov_result_html
+            stats["Coverage link"] = cov_result_html
+        for run in runs:
+            if run_config['full_name'] in run:
+                run = run[run_config['full_name']]
+                break
+        stats["Result count"] = run["resultCount"]
+        stats["Duration"] = run["duration"]
+        stats["CodeChecker link"] = "%s/#run=%s&tab=%s" % \
+            (config['CodeChecker']['url'], run_config['full_name'], run_config['full_name'])
+        stats["Successfully analyzed"] = \
+            len([name for name in os.listdir(run_config["result_path"])
+                 if os.path.isfile(name) and name.endswith(".plist")])
+        if "LOC" in project:
+            stats["Lines of code"] = project["LOC"]
+
+        # Pretty printing statistics.
         stats_result = os.path.join(run_config["result_path"], "stats.json")
         with open(stats_result, "w") as res_file:
             res_file.write(json.dumps(stats, indent=2))
