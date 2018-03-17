@@ -10,6 +10,7 @@ import sys
 import tempfile
 
 from summarize_sa_stats import summ_stats
+from summarize_gcov import summarize_gcov
 from generate_stat_html import print_stats_html
 
 TESTBENCH_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -294,10 +295,14 @@ def post_process_project(project, project_dir, config, num_jobs):
                 print("[Warning] MergeCoverage.py is not found in path.")
             cov_result_html = os.path.join(run_config["result_path"], "coverage.html")
             try:
-                run_command("gcovr -g %s --html --html-details -r %s -o %s" %
+                run_command("gcovr -k -g %s --html --html-details -r %s -o %s" %
                             (cov_result_path, project_dir, cov_result_html))
             except OSError as oerr:
                 print("[Warning] gcovr is not found in path.")
+            cov_summary = summarize_gcov(cov_result_path)
+            cov_summary_path = os.path.join(run_config["result_path"], "coverage.txt")
+            with open(cov_summary_path, "w") as cov_file:
+                cov_file.write(json.dumps(cov_summary, indent=2))
 
         stats_dir = os.path.join(run_config["result_path"], "success")
 
@@ -306,7 +311,8 @@ def post_process_project(project, project_dir, config, num_jobs):
 
         # Additional statistics.
         if cov_result_html:
-            stats["Coverage link"] = cov_result_html
+            stats["Detauled coverage link"] = cov_result_html
+            stats["Coverage"] = cov_summary["overall"]["coverage"]
         for run in runs:
             if run_config['full_name'] in run:
                 run = run[run_config['full_name']]
