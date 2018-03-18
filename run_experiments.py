@@ -172,13 +172,16 @@ def check_logged(projects_root):
     """
 
     projects = os.listdir(projects_root)
+    num = 0
     for project in projects:
         if os.path.isfile(project):
             continue
         log = os.path.join(projects_root, project, 'compile_commands.json')
         if os.path.getsize(log) == 0:
             shutil.rmtree(os.path.join(projects_root, project))
-    return os.listdir(projects_root)
+            continue
+        num += 1
+    return num
 
 
 def log_project(project, project_dir, num_jobs):
@@ -277,13 +280,9 @@ def check_project(project, project_dir, config, num_jobs):
 
 
 def post_process_project(project, project_dir, config, num_jobs):
-    stats_html = os.path.join(os.path.dirname(project_dir), "stats.html")
-    try:
-        os.remove(stats_html)
-    except OSError:
-        pass
     _, stdout, _ = run_command("CodeChecker cmd runs --url %s -o json" % config['CodeChecker']['url'])
     runs = json.loads(stdout)
+    project_stats = {}
     for run_config in project["configurations"]:
         cov_result_html = None
         if os.path.isdir(run_config["coverage_dir"]):
@@ -311,7 +310,7 @@ def post_process_project(project, project_dir, config, num_jobs):
 
         # Additional statistics.
         if cov_result_html:
-            stats["Detauled coverage link"] = cov_result_html
+            stats["Detailed coverage link"] = cov_result_html
             stats["Coverage"] = cov_summary["overall"]["coverage"]
         for run in runs:
             if run_config['full_name'] in run:
@@ -327,13 +326,15 @@ def post_process_project(project, project_dir, config, num_jobs):
         if "LOC" in project:
             stats["Lines of code"] = project["LOC"]
 
-        # Pretty printing statistics.
-        stats_result = os.path.join(run_config["result_path"], "stats.json")
-        with open(stats_result, "w") as res_file:
-            res_file.write(json.dumps(stats, indent=2))
-        print_stats_html(run_config["full_name"], stats_result, stats_html)
+        project_stats[run_config["name"]] = stats
 
-        print("[%s] Post processed." % run_config['full_name'])
+    # Output statistics.
+    stats_html = os.path.join(os.path.dirname(project_dir), "stats.html")
+    stats_result = os.path.join(os.path.dirname(project_dir), "stats.json")
+    with open(stats_result, "w") as res_file:
+        res_file.write(json.dumps(project_stats, indent=2))
+    print_stats_html(project["name"], project_stats, stats_html)
+    print("[%s] Post processed." % project['name'])
 
 
 def main():
@@ -368,6 +369,13 @@ def main():
     if not os.path.isdir(projects_root):
         os.mkdir(projects_root)
 
+    # Remove old stats HTML if exist.
+    stats_html = os.path.join(projects_root, "stats.html")
+    try:
+        os.remove(stats_html)
+    except:
+        pass
+
     for project in config['projects']:
         project_dir = os.path.join(projects_root, project['name'])
         if not clone_project(project, project_dir):
@@ -380,7 +388,7 @@ def main():
 
     logged_projects = check_logged(projects_root)
     print("Number of analyzed projects: %d / %d"
-          % (len(logged_projects), len(config['projects'])))
+          % (logged_projects, len(config['projects'])))
     print("Results can be viewed at '%s'." % config['CodeChecker']['url'])
 
 
