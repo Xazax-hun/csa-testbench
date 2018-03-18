@@ -1,9 +1,7 @@
 import argparse as ap
 import json
-import re
 import requests
 import sys
-import urllib
 
 LANG_CODES = {'c': 28, 'c++': 16, 'objectivec': 21, 'objectivec++': 35}
 
