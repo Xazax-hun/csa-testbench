@@ -167,7 +167,7 @@ a name. Every other configuration value is optional.
 specified all project will be analyzes for each configuration. The global configuration
 entry applies to every project. A configuration entry local to a project will overwrite
 the global settings. Every configuration should have at least a name.
-* **analyzer_args**: Arguments passed to Clang (not cc1). The entry in CodeChecker applies to
+* **clang_sa_args**: Arguments passed to Clang (not cc1). The entry in CodeChecker applies to
 all projects and appended to the final list of arguments. The entries in the project are
 apply to every configurations.
 * **analyze_args**: Arguments passed to the CodeChecker analyze command. Works the same way as
