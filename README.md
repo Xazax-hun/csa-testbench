@@ -88,7 +88,12 @@ If [line based code coverage support is present](https://github.com/Xazax-hun/cl
 the script will collect coverage data and include it in the final report.
 Note that, this requires a patched version of clang, this support is not
 upstreamed yet. For the code coverage collection support to work
-you need to have the `MergeCoverage.py` script in the `PATH`.
+you need to have the `MergeCoverage.py` script and `gcovr` utility
+in the `PATH`.
+
+Example coverage report:
+
+![Coverage report](https://raw.githubusercontent.com/Xazax-hun/csa-testbench/master/pictures/coverage.png)
 
 ### Configuration
 
