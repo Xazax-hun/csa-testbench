@@ -1,5 +1,3 @@
-import os
-
 header = """
 <!DOCTYPE html>
 <html lang="en">
@@ -26,42 +24,46 @@ footer = """
 """
 
 
-def finish_stats_html(html):
-    with open(html, 'a') as stat_html:
-        stat_html.write(footer)
+class HTMLPrinter(object):
 
+    def __init__(self, path):
+        self.html_path = path
+        with open(self.html_path, 'w') as stat_html:
+            stat_html.write(header)
 
-def extend_stats_html(name, data, html):
-    stat_html = open(html, 'a')
-    if os.stat(html).st_size == 0:
-        stat_html.write(header)
-    keys = set()
-    configurations = set()
-    for configuration, val in data.iteritems():
-        configurations.add(configuration)
-        for stat_name in val:
-            keys.add(stat_name)
+    def finish(self):
+        with open(self.html_path, 'a') as stat_html:
+            stat_html.write(footer)
 
-    stat_html.write("<h1>" + name + "</h1>\n")
-    stat_html.write('<table class="table table-bordered table-striped table-sm">\n')
-    stat_html.write('<thead class="thead-dark">')
-    stat_html.write("<tr>\n")
-    stat_html.write("<th>Statistic Name</th>")
-    for conf in configurations:
-        stat_html.write("<th>%s</th>" % conf)
-    stat_html.write("</tr>\n")
-    stat_html.write('</thread>\n')
-    stat_html.write('<tbody>\n')
+    def extend_with_project(self, name, data):
+        stat_html = open(self.html_path, 'a')
+        keys = set()
+        configurations = set()
+        for configuration, val in data.iteritems():
+            configurations.add(configuration)
+            for stat_name in val:
+                keys.add(stat_name)
 
-    for stat_name in keys:
+        stat_html.write("<h1>" + name + "</h1>\n")
+        stat_html.write('<table class="table table-bordered table-striped table-sm">\n')
+        stat_html.write('<thead class="thead-dark">')
         stat_html.write("<tr>\n")
-        stat_html.write("<td>%s</td>" % stat_name)
+        stat_html.write("<th>Statistic Name</th>")
         for conf in configurations:
-            val = "-"
-            if stat_name in data[conf]:
-                val = str(data[conf][stat_name])
-            stat_html.write("<td>%s</td>" % val)
+            stat_html.write("<th>%s</th>" % conf)
         stat_html.write("</tr>\n")
-    stat_html.write('</tbody>\n')
-    stat_html.write("</table>\n\n")
-    stat_html.close()
+        stat_html.write('</thread>\n')
+        stat_html.write('<tbody>\n')
+
+        for stat_name in keys:
+            stat_html.write("<tr>\n")
+            stat_html.write("<td>%s</td>" % stat_name)
+            for conf in configurations:
+                val = "-"
+                if stat_name in data[conf]:
+                    val = str(data[conf][stat_name])
+                stat_html.write("<td>%s</td>" % val)
+            stat_html.write("</tr>\n")
+        stat_html.write('</tbody>\n')
+        stat_html.write("</table>\n\n")
+        stat_html.close()

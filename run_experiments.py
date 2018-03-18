@@ -11,7 +11,7 @@ import tempfile
 
 from summarize_sa_stats import summ_stats
 from summarize_gcov import summarize_gcov
-from generate_stat_html import extend_stats_html, finish_stats_html
+from generate_stat_html import HTMLPrinter
 
 TESTBENCH_ROOT = os.path.dirname(os.path.abspath(__file__))
 
@@ -283,7 +283,7 @@ def create_link(url, text):
     return '<a href="%s">%s</a>' % (url, text)
 
 
-def post_process_project(project, project_dir, config, num_jobs):
+def post_process_project(project, project_dir, config, printer):
     _, stdout, _ = run_command("CodeChecker cmd runs --url %s -o json" % config['CodeChecker']['url'])
     runs = json.loads(stdout)
     project_stats = {}
@@ -333,9 +333,7 @@ def post_process_project(project, project_dir, config, num_jobs):
 
         project_stats[run_config["name"]] = stats
 
-    # Output statistics.
-    stats_html = os.path.join(os.path.dirname(project_dir), "stats.html")
-    extend_stats_html(project["name"], project_stats, stats_html)
+    printer.extend_with_project(project["name"], project_stats)
     print("[%s] Post processed." % project['name'])
 
 
@@ -371,12 +369,8 @@ def main():
     if not os.path.isdir(projects_root):
         os.mkdir(projects_root)
 
-    # Remove old stats HTML if exist.
     stats_html = os.path.join(projects_root, "stats.html")
-    try:
-        os.remove(stats_html)
-    except:
-        pass
+    printer = HTMLPrinter(stats_html)
 
     for project in config['projects']:
         project_dir = os.path.join(projects_root, project['name'])
@@ -386,9 +380,9 @@ def main():
         if not log_project(project, project_dir, args.jobs):
             continue
         check_project(project, project_dir, config, args.jobs)
-        post_process_project(project, project_dir, config, args.jobs)
+        post_process_project(project, project_dir, config, printer)
 
-    finish_stats_html(stats_html)
+    printer.finish()
 
     logged_projects = check_logged(projects_root)
     print("Number of analyzed projects: %d / %d"
