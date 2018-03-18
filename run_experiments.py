@@ -270,7 +270,7 @@ def check_project(project, project_dir, config, num_jobs):
         cmd += " --saargs " + filename
         cmd += collect_args("analyze_args", conf_sources)
         run_command(cmd, print_error=False, env=env)
-        print("Done. Storing results...")
+        print("[%s] Done. Storing results..." % name)
 
         cmd = "CodeChecker store %s --url '%s' -n %s --tag %s" \
               % (result_path, config["CodeChecker"]["url"], name, tag)
