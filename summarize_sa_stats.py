@@ -63,7 +63,7 @@ def summ_stats(dir, verbose=True):
         return stat_map
 
     if verbose:
-        # print the content of stat_map in a formatted way grouped by the statistic producing file
+        # Print the content of stat_map in a formatted way grouped by the statistic producing file.
         last_space = floor(log10(max(stat_map.values()))) + 1
         for key in sorted(group.iterkeys(), key=(lambda x: group[x])):
             val = stat_map[key]
