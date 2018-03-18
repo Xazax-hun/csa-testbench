@@ -37,6 +37,9 @@ Example usage:
 python run_experiments.py --config projects.json --jobs 8
 ```
 
+Note that, the CodeChecker server at the URL specified in the config needs to
+be started separately before running an experiment.
+
 Example configuration:
 
 ```json
