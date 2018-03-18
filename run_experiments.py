@@ -11,7 +11,7 @@ import tempfile
 
 from summarize_sa_stats import summ_stats
 from summarize_gcov import summarize_gcov
-from generate_stat_html import print_stats_html
+from generate_stat_html import extend_stats_html, finish_stats_html
 
 TESTBENCH_ROOT = os.path.dirname(os.path.abspath(__file__))
 
@@ -279,6 +279,10 @@ def check_project(project, project_dir, config, num_jobs):
         print("[%s] Results stored." % name)
 
 
+def create_link(url, text):
+    return '<a href="%s">%s</a>' % (url, text)
+
+
 def post_process_project(project, project_dir, config, num_jobs):
     _, stdout, _ = run_command("CodeChecker cmd runs --url %s -o json" % config['CodeChecker']['url'])
     runs = json.loads(stdout)
@@ -310,7 +314,7 @@ def post_process_project(project, project_dir, config, num_jobs):
 
         # Additional statistics.
         if cov_result_html:
-            stats["Detailed coverage link"] = cov_result_html
+            stats["Detailed coverage link"] = create_link(cov_result_html, "coverage");
             stats["Coverage"] = cov_summary["overall"]["coverage"]
         for run in runs:
             if run_config['full_name'] in run:
@@ -318,8 +322,9 @@ def post_process_project(project, project_dir, config, num_jobs):
                 break
         stats["Result count"] = run["resultCount"]
         stats["Duration"] = run["duration"]
-        stats["CodeChecker link"] = "%s/#run=%s&tab=%s" % \
-            (config['CodeChecker']['url'], run_config['full_name'], run_config['full_name'])
+        stats["CodeChecker link"] = create_link("%s/#run=%s&tab=%s" %
+            (config['CodeChecker']['url'], run_config['full_name'], run_config['full_name']),
+            "CodeChecker")
         stats["Successfully analyzed"] = \
             len([name for name in os.listdir(run_config["result_path"])
                  if os.path.isfile(name) and name.endswith(".plist")])
@@ -330,10 +335,7 @@ def post_process_project(project, project_dir, config, num_jobs):
 
     # Output statistics.
     stats_html = os.path.join(os.path.dirname(project_dir), "stats.html")
-    stats_result = os.path.join(os.path.dirname(project_dir), "stats.json")
-    with open(stats_result, "w") as res_file:
-        res_file.write(json.dumps(project_stats, indent=2))
-    print_stats_html(project["name"], project_stats, stats_html)
+    extend_stats_html(project["name"], project_stats, stats_html)
     print("[%s] Post processed." % project['name'])
 
 
@@ -385,6 +387,8 @@ def main():
             continue
         check_project(project, project_dir, config, args.jobs)
         post_process_project(project, project_dir, config, args.jobs)
+
+    finish_stats_html(stats_html)
 
     logged_projects = check_logged(projects_root)
     print("Number of analyzed projects: %d / %d"

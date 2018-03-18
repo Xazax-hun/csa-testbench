@@ -38,7 +38,7 @@
     }
   ],
   "CodeChecker": {
-    "url": "localhost:8001/Default",
+    "url": "http://localhost:8001/Default",
     "analyze_args": "",
     "store_args": ""
   }
