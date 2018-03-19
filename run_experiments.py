@@ -171,7 +171,7 @@ def check_logged(projects_root):
     projects = os.listdir(projects_root)
     num = 0
     for project in projects:
-        if os.path.isfile(project):
+        if os.path.isfile(os.path.join(projects_root, project)):
             continue
         num += 1
     return num
@@ -301,6 +301,7 @@ def post_process_project(project, project_dir, config, printer):
                 cov_file.write(json.dumps(cov_summary, indent=2))
 
         stats_dir = os.path.join(run_config["result_path"], "success")
+        failed_dir = os.path.join(run_config["result_path"], "failed")
 
         # Statistics from the Analyzer engine (if enabled).
         stats = summ_stats(stats_dir, False)
@@ -321,6 +322,9 @@ def post_process_project(project, project_dir, config, printer):
         stats["Successfully analyzed"] = \
             len([name for name in os.listdir(run_config["result_path"])
                  if name.endswith(".plist")])
+        stats["Failed to analyze"] = \
+            len([name for name in os.listdir(failed_dir)
+                 if name.endswith(".zip")])
         if "LOC" in project:
             stats["Lines of code"] = project["LOC"]
 
