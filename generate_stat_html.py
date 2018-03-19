@@ -88,7 +88,6 @@ class HTMLPrinter(object):
         for chart in self.charts:
             names = defaultdict(list)
             values = defaultdict(list)
-            stat_html.write("<h2>%s</h2>\n" % chart)
             for project, data in self.projects.iteritems():
                 for configuration, stats in data.iteritems():
                     if chart in stats:
@@ -96,6 +95,10 @@ class HTMLPrinter(object):
                     else:
                         values[configuration].append(0)
                     names[configuration].append(project)
+
+            # Skip empty charts.
+            if all([all([x == 0 for x in values[conf]]) for conf in names]):
+                continue
 
             bars = []
             for conf in names:
@@ -105,4 +108,5 @@ class HTMLPrinter(object):
             fig = go.Figure(data=bars, layout=layout)
             div = py.plot(fig, show_link=False, include_plotlyjs=False,
                           output_type='div', auto_open=False)
+            stat_html.write("<h2>%s</h2>\n" % chart)
             stat_html.write(div)
