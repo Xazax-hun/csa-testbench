@@ -3,11 +3,13 @@ import argparse as ap
 import json
 import multiprocessing
 import os
+import re
 import shlex
 import shutil
 import subprocess as sp
 import sys
 import tempfile
+import zipfile
 
 from summarize_sa_stats import summ_stats
 from summarize_gcov import summarize_gcov
@@ -276,6 +278,27 @@ def create_link(url, text):
     return '<a href="%s">%s</a>' % (url, text)
 
 
+def process_failures(path):
+    failures = 0
+    asserts = 0
+    assert_pattern = re.compile('Assertion.+failed\.')
+    for name in os.listdir(path):
+        if not name.endswith(".zip"):
+            continue
+        failures += 1
+        full_path = os.path.join(path, name)
+        with zipfile.ZipFile(full_path) as zip:
+            with zip.open("stderr") as stderr:
+                for line in stderr:
+                    assert_match = assert_pattern.search(line)
+                    if assert_match:
+                        asserts += 1
+                    # TODO: collect statistics about the types
+                    # of asserts.
+
+    return asserts, failures
+
+
 def post_process_project(project, project_dir, config, printer):
     _, stdout, _ = run_command("CodeChecker cmd runs --url %s -o json" % config['CodeChecker']['url'])
     runs = json.loads(stdout)
@@ -322,9 +345,9 @@ def post_process_project(project, project_dir, config, printer):
         stats["Successfully analyzed"] = \
             len([name for name in os.listdir(run_config["result_path"])
                  if name.endswith(".plist")])
-        stats["Failed to analyze"] = \
-            len([name for name in os.listdir(failed_dir)
-                 if name.endswith(".zip")])
+        asserts, failures = process_failures(failed_dir)
+        stats["Failed to analyze"] = failures
+        stats["Number of assertions"] = asserts
         if "LOC" in project:
             stats["Lines of code"] = project["LOC"]
 
