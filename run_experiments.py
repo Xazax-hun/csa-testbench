@@ -42,6 +42,7 @@ def run_command(cmd, print_error=True, cwd=None, env=None):
 
 
 def count_lines(project, project_dir):
+    # FIXME: exclude result directories for prepared projects.
     cloc_failed, stdout, _ = run_command("cloc %s --json" % project_dir)
     if not cloc_failed:
         try:
@@ -163,22 +164,14 @@ def identify_build_system(project_dir):
 def check_logged(projects_root):
     """Post-script cleanup.
 
-    Removes any projects that have an empty build-log JSON file
-    at the end of the script.
-
     FIXME: instead of listing all directories only list the ones
-           that were in the config file. Or move the check to
-           log_project.
+           that were in the config file. What should we clean up at all?
     """
 
     projects = os.listdir(projects_root)
     num = 0
     for project in projects:
         if os.path.isfile(project):
-            continue
-        log = os.path.join(projects_root, project, 'compile_commands.json')
-        if os.path.getsize(log) == 0:
-            shutil.rmtree(os.path.join(projects_root, project))
             continue
         num += 1
     return num
@@ -327,7 +320,7 @@ def post_process_project(project, project_dir, config, printer):
             "CodeChecker")
         stats["Successfully analyzed"] = \
             len([name for name in os.listdir(run_config["result_path"])
-                 if os.path.isfile(name) and name.endswith(".plist")])
+                 if name.endswith(".plist")])
         if "LOC" in project:
             stats["Lines of code"] = project["LOC"]
 
