@@ -1,5 +1,6 @@
 from __future__ import print_function
 import argparse as ap
+from collections import Counter
 import json
 import multiprocessing
 import os
@@ -278,9 +279,10 @@ def create_link(url, text):
     return '<a href="%s">%s</a>' % (url, text)
 
 
-def process_failures(path):
+def process_failures(path, top=5):
     failures = 0
     asserts = 0
+    assert_counts = Counter()
     assert_pattern = re.compile('Assertion.+failed\.')
     for name in os.listdir(path):
         if not name.endswith(".zip"):
@@ -290,13 +292,12 @@ def process_failures(path):
         with zipfile.ZipFile(full_path) as zip:
             with zip.open("stderr") as stderr:
                 for line in stderr:
-                    assert_match = assert_pattern.search(line)
-                    if assert_match:
+                    match = assert_pattern.search(line)
+                    if match:
                         asserts += 1
-                    # TODO: collect statistics about the types
-                    # of asserts.
+                        assert_counts[match.group(0)] += 1
 
-    return asserts, failures
+    return asserts, failures, assert_counts.most_common(top)
 
 
 def post_process_project(project, project_dir, config, printer):
@@ -345,9 +346,12 @@ def post_process_project(project, project_dir, config, printer):
         stats["Successfully analyzed"] = \
             len([name for name in os.listdir(run_config["result_path"])
                  if name.endswith(".plist")])
-        asserts, failures = process_failures(failed_dir)
+        asserts, failures, toplist = process_failures(failed_dir)
         stats["Failed to analyze"] = failures
         stats["Number of assertions"] = asserts
+        if toplist:
+            toplist = map(lambda x: "%s [%d]" % x, toplist)
+            stats["Top asserts"] = "<br>\n".join(toplist)
         if "LOC" in project:
             stats["Lines of code"] = project["LOC"]
 
