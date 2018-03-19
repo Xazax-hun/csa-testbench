@@ -1,5 +1,12 @@
 from collections import defaultdict
 
+try:
+    import plotly.offline as py
+    import plotly.graph_objs as go
+    charts_supported = True
+except ImportError:
+    charts_supported = False
+
 header = """
 <!DOCTYPE html>
 <html lang="en">
@@ -33,6 +40,7 @@ class HTMLPrinter(object):
     def __init__(self, path):
         self.html_path = path
         self.charts = ["Coverage", "Duration", "Result count"]
+        self.excludes = ["TU times"]
         self.projects = {}
         with open(self.html_path, 'w') as stat_html:
             stat_html.write(header)
@@ -64,6 +72,8 @@ class HTMLPrinter(object):
         stat_html.write('<tbody>\n')
 
         for stat_name in keys:
+            if stat_name in self.excludes:
+                continue
             stat_html.write("<tr>\n")
             stat_html.write("<td>%s</td>" % stat_name)
             for conf in configurations:
@@ -74,15 +84,27 @@ class HTMLPrinter(object):
             stat_html.write("</tr>\n")
         stat_html.write('</tbody>\n')
         stat_html.write("</table>\n\n")
+        self._generate_time_histogram(stat_html, configurations, data)
         stat_html.close()
 
-    def _generate_charts(self, stat_html):
-        try:
-            import plotly.offline as py
-            import plotly.graph_objs as go
-        except ImportError:
+    def _generate_time_histogram(self, stat_html, configurations, data):
+        if not charts_supported:
             return
+        traces = []
+        for conf in configurations:
+            if "TU times" in data[conf]:
+                traces.append(go.Histogram(x=data[conf]["TU times"],
+                                           name=conf))
+        layout = go.Layout(barmode='overlay')
+        fig = go.Figure(data=traces, layout=layout)
+        div = py.plot(fig, show_link=False, include_plotlyjs=False,
+                      output_type='div', auto_open=False)
+        stat_html.write("<h3>Time per TU histogram</h3>\n")
+        stat_html.write(div)
 
+    def _generate_charts(self, stat_html):
+        if not charts_supported:
+            return
         stat_html.write("<h1>Charts</h1>\n")
         layout = go.Layout(barmode='group')
         for chart in self.charts:
