@@ -16,7 +16,7 @@ from summarize_sa_stats import summ_stats
 from summarize_gcov import summarize_gcov
 from generate_stat_html import HTMLPrinter
 
-TESTBENCH_ROOT = os.path.dirname(os.path.abspath(__file__))
+TESTBENCH_ROOT = os.getcwd()
 
 
 def load_config(filename):
