@@ -143,9 +143,7 @@ def identify_build_system(project_dir):
 
     if 'autogen.sh' in project_files:
         # Autogen needs to be executed in the project's root directory.
-        os.chdir(project_dir)
-        autogen_failed, _, _ = run_command("sh autogen.sh")
-        os.chdir(os.path.dirname(project_dir))
+        autogen_failed, _, _ = run_command("sh autogen.sh", cwd=project_dir)
         if autogen_failed:
             return None
 
@@ -153,9 +151,7 @@ def identify_build_system(project_dir):
     project_files = os.listdir(project_dir)
 
     if 'configure' in project_files:
-        os.chdir(project_dir)
-        configure_failed, _, _ = run_command("./configure")
-        os.chdir(os.path.dirname(project_dir))
+        configure_failed, _, _ = run_command("./configure", cwd=project_dir)
         if configure_failed:
             return None
         return 'makefile'
@@ -280,6 +276,8 @@ def create_link(url, text):
 
 
 def process_failures(path, top=5):
+    if not os.path.exists(path):
+        return 0, 0, []
     failures = 0
     asserts = 0
     assert_counts = Counter()
@@ -384,7 +382,7 @@ def main():
         sys.stderr.write(
             "[ERROR] The number of jobs must be a positive integer.\n")
 
-    config_path = os.path.join(TESTBENCH_ROOT, args.config)
+    config_path = args.config
     print("Using configuration file '%s'." % config_path)
     config = load_config(config_path)
     print("Number of projects to process: %d.\n" % len(config['projects']))
