@@ -339,8 +339,9 @@ def post_process_project(project, project_dir, config, printer):
         stats["Result count"] = run["resultCount"]
         stats["Duration"] = run["duration"]
         stats["CodeChecker link"] = create_link("%s/#run=%s&tab=%s" %
-            (config['CodeChecker']['url'], run_config['full_name'], run_config['full_name']),
-            "CodeChecker")
+                                                (config['CodeChecker']['url'], run_config['full_name'],
+                                                 run_config['full_name']),
+                                                "CodeChecker")
         stats["Successfully analyzed"] = \
             len([name for name in os.listdir(run_config["result_path"])
                  if name.endswith(".plist")])
@@ -392,7 +393,8 @@ def main():
         os.mkdir(projects_root)
 
     stats_html = os.path.join(projects_root, "stats.html")
-    printer = HTMLPrinter(stats_html)
+    printer = HTMLPrinter(stats_html,
+                          config.get("charts", ["Duration", "Result count"]))
 
     for project in config['projects']:
         project_dir = os.path.join(projects_root, project['name'])

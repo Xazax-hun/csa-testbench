@@ -37,9 +37,9 @@ footer = """
 
 class HTMLPrinter(object):
 
-    def __init__(self, path):
+    def __init__(self, path, charts):
         self.html_path = path
-        self.charts = ["Coverage", "Duration", "Result count"]
+        self.charts = charts
         self.excludes = ["TU times"]
         self.projects = {}
         with open(self.html_path, 'w') as stat_html:

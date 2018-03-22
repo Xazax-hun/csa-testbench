@@ -156,6 +156,7 @@ a name. Every other configuration value is optional.
       "clang_sa_args": "-Xclang -analyzer-stats"
     }
   ],
+  "charts": ["Coverage", "Duration", "Result count"],
   "CodeChecker": {
     "url": "http://localhost:8001/Default",
     "analyze_args": "",
@@ -166,7 +167,7 @@ a name. Every other configuration value is optional.
 
 #### Optional configuration values
 
-* **Configurations**: It is possible to specify multiple configurations. If multiple configurations are
+* **configurations**: It is possible to specify multiple configurations. If multiple configurations are
 specified all project will be analyzes for each configuration. The global configuration
 entry applies to every project. A configuration entry local to a project will overwrite
 the global settings. Every configuration should have at least a name.
@@ -187,6 +188,7 @@ infer the build system but invoke the make command specified in this value.
 check out the project and not attempt to create a build log. It will assume that a folder
 with the name of the project exist and contains a `compile_commands.json`. It will use that
 file to analyze the project.
+* **charts**: The list of statistics that should be charted.
 
 ### Limitations
 
