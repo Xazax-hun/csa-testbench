@@ -393,8 +393,7 @@ def main():
         os.mkdir(projects_root)
 
     stats_html = os.path.join(projects_root, "stats.html")
-    printer = HTMLPrinter(stats_html,
-                          config.get("charts", ["Duration", "Result count"]))
+    printer = HTMLPrinter(stats_html, config)
 
     for project in config['projects']:
         project_dir = os.path.join(projects_root, project['name'])

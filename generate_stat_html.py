@@ -1,4 +1,5 @@
 from collections import defaultdict
+import json
 
 try:
     import plotly.offline as py
@@ -40,15 +41,17 @@ footer = """
 """
 
 
+# FIXME: Escape strings.
 class HTMLPrinter(object):
 
-    def __init__(self, path, charts):
+    def __init__(self, path, config):
         self.html_path = path
-        self.charts = charts
+        self.charts = config.get("charts", ["Duration", "Result count"])
         self.excludes = ["TU times"]
         self.projects = {}
         with open(self.html_path, 'w') as stat_html:
             stat_html.write(header)
+            stat_html.write("<!-- %s -->\n" % json.dumps(config))
 
     def finish(self):
         with open(self.html_path, 'a') as stat_html:
