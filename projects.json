@@ -55,6 +55,10 @@
     {
       "name": "libpng",
       "url": "https://github.com/glennrp/libpng.git"
+    },
+    {
+      "name": "protobuf",
+      "url": "https://github.com/google/protobuf.git"
     }
   ],
   "configurations": [
