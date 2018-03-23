@@ -96,7 +96,7 @@ in the `PATH`.
 
 Example coverage report:
 
-![Coverage report](https://raw.githubusercontent.com/Xazax-hun/csa-testbench/master/pictures/coverage.png)
+![Coverage report](https://raw.githubusercontent.com/Xazax-hun/csa-testbench/master/pictures/coverage.gif)
 
 ### Configuration
 
