@@ -30,6 +30,11 @@ header = """
 
 footer = """
 </div>
+<footer>
+  <div class="container-fluid bg-light p-3 mb-2">
+    <span class="text-muted">This report is created by the <a href="https://github.com/Xazax-hun/csa-testbench">CSA-Testbench</a> toolset.</span>
+  </div>
+</footer>
 </body>
 </html>
 """
