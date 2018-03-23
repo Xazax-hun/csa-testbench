@@ -73,7 +73,7 @@ Example configuration:
 
 Example report:
 
-![Example report](https://raw.githubusercontent.com/Xazax-hun/csa-testbench/master/pictures/report.png)
+![Example report](https://raw.githubusercontent.com/Xazax-hun/csa-testbench/master/pictures/report.gif)
 
 ### Dependencies
 
