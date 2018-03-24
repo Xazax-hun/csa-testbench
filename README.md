@@ -1,8 +1,9 @@
 Clang Static Analyzer Test Bench
 ================================
 
-The main purpose of this project is to make the development of the Clang
-Static Analyzer easier. It consists of a collection of tools to help
+The main purpose of this project is to make the development of the 
+[Clang Static Analyzer](https://clang-analyzer.llvm.org/) easier.
+It consists of a collection of tools to help
 finding projects to test certain checks or analyzer engine changes on
 and to evaluate the results.
 
