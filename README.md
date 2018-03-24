@@ -10,9 +10,9 @@ Generate Project List utility
 -----------------------------
 
 The `generate_project_list.py` utility can help to discover projects to
-test a check on. It is using `https://searchcode.com` API. It is suitable
-for getting a list of projects that are using a certain API or language
-construct extensively.
+test a check on. It is using [SearchCode](https://searchcode.com) API.
+It is suitable for getting a list of projects that are using a certain
+API or language construct extensively.
 
 Example usage:
 
@@ -20,7 +20,7 @@ Example usage:
 python gen_project_list.py 'pthread_mutex_t' 'C C++' 5 −−output pthread.json
 ```
 
-Itt will generate a list of 5 projects which can be both C or C++ projects that
+It will generate a list of 5 projects which can be both C or C++ projects that
 are using `pthread_mutex_t`.
 
 Running Experiments
@@ -81,11 +81,14 @@ In order for this set of scripts to work, [CodeChecker](https://github.com/Erics
 should be installed and available in the `PATH`. The packages from the
 `python_requirements` file should also be installed.
 
+These scripts are written in Python 2 for improved compatibility with
+CodeChecker.
+
 If `cloc` utility is in the path the script will also count the lines of
 code of the analyzed projects and include it in the final report.
 
 If `clang` is compiled with the statistics enabled the scripts will collect
-this data and include in the final report.
+this data and include it in the final report.
 
 If [line based code coverage support is present](https://github.com/Xazax-hun/clang/commit/8428aeb89deb0b61a5d0101dc7fab962be0cf6e8)
 the script will collect coverage data and include it in the final report.
@@ -101,7 +104,7 @@ Example coverage report:
 ### Configuration
 
 There is an example configuration below. A minimal configuration should contain a list
-of projects and a CodeChecker url. Each project should at least contain a git url and
+of projects and a CodeChecker URL. Each project should at least contain a git URL and
 a name. Every other configuration value is optional.
 
 ```json
@@ -168,12 +171,12 @@ a name. Every other configuration value is optional.
 #### Optional configuration values
 
 * **configurations**: It is possible to specify multiple configurations. If multiple configurations are
-specified all project will be analyzes for each configuration. The global configuration
+specified all project will be analyzed with each of them. The global configuration
 entry applies to every project. A configuration entry local to a project will overwrite
 the global settings. Every configuration should have at least a name.
 * **clang_sa_args**: Arguments passed to Clang (not cc1). The entry in CodeChecker applies to
 all projects and appended to the final list of arguments. The entries in the project are
-apply to every configurations.
+apply to every configuration.
 * **analyze_args**: Arguments passed to the CodeChecker analyze command. Works the same way as
 `analyzer_args`.
 * **store_args**: Arguments passed to the CodeChecker store command. Works the same way as
@@ -186,7 +189,7 @@ useful to make the experiments reproducible, i.e.: always testing with the same 
 infer the build system but invoke the make command specified in this value.
 * **prepared**: If this configuration value is specified, the script will not attempt to
 check out the project and not attempt to create a build log. It will assume that a folder
-with the name of the project exist and contains a `compile_commands.json`. It will use that
+with the name of the project exists and contains a `compile_commands.json`. It will use that
 file to analyze the project.
 * **charts**: The list of statistics that should be charted.
 
