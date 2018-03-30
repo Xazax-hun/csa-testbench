@@ -256,6 +256,8 @@ def check_project(project, project_dir, config, num_jobs):
         env = None
         if "clang_path" in run_config:
             env = update_path(run_config["clang_path"])
+        _, version_string, _ = run_command("clang --version", env=env)
+        run_config["analyzer_version"] = version_string
         cmd = ("CodeChecker analyze '%s' -j%d -o %s -q " +
                "--analyzers clangsa --capture-analysis-output") \
               % (json_path, num_jobs, result_path)
@@ -329,6 +331,7 @@ def post_process_project(project, project_dir, config, printer):
         stats = summ_stats(stats_dir, False)
 
         # Additional statistics.
+        stats["Analyzer version"] = run_config["analyzer_version"]
         if cov_result_html:
             stats["Detailed coverage link"] = create_link(cov_result_html, "coverage");
             stats["Coverage"] = cov_summary["overall"]["coverage"]
