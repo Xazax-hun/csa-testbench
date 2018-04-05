@@ -47,9 +47,8 @@ def run_command(cmd, print_error=True, cwd=None, env=None, shell=False):
 
 
 def count_lines(project, project_dir):
-    # FIXME: exclude result directories for prepared projects.
-    cloc_failed, stdout, _ = run_command("cloc %s --json" % project_dir)
-    if not cloc_failed:
+    failed, stdout, _ = run_command('cloc %s --json --not-match-d="cc_results"' % project_dir)
+    if not failed:
         try:
             cloc_json_out = json.loads(stdout)
             project["LOC"] = cloc_json_out["SUM"]["code"]
