@@ -290,25 +290,27 @@ def create_link(url, text):
 
 def process_failures(path, top=5):
     if not os.path.exists(path):
-        return 0, 0, []
-    failures = 0
-    asserts = 0
-    assert_counts = Counter()
+        return 0, 0, [], 0, []
+    failures, asserts, errors = 0, Counter(), Counter()
     assert_pattern = re.compile('Assertion.+failed\.')
+    error_pattern = re.compile('error: (.+)')
     for name in os.listdir(path):
         if not name.endswith(".zip"):
             continue
         failures += 1
         full_path = os.path.join(path, name)
-        with zipfile.ZipFile(full_path) as zip:
-            with zip.open("stderr") as stderr:
-                for line in stderr:
-                    match = assert_pattern.search(line)
-                    if match:
-                        asserts += 1
-                        assert_counts[match.group(0)] += 1
+        with zipfile.ZipFile(full_path) as zip, \
+                zip.open("stderr") as stderr:
+            for line in stderr:
+                match = assert_pattern.search(line)
+                if match:
+                    asserts[match.group(0)] += 1
+                match = error_pattern.search(line)
+                if match:
+                    errors[match.group(1)] += 1
 
-    return asserts, failures, assert_counts.most_common(top)
+    return failures, sum(asserts.values()), asserts.most_common(top), \
+           sum(errors.values()), errors.most_common(top)
 
 
 def post_process_project(project, project_dir, config, printer):
@@ -359,12 +361,17 @@ def post_process_project(project, project_dir, config, printer):
         stats["Successfully analyzed"] = \
             len([name for name in os.listdir(run_config["result_path"])
                  if name.endswith(".plist")])
-        asserts, failures, toplist = process_failures(failed_dir)
+        failures, asserts, assert_toplist, errors, error_toplist = \
+            process_failures(failed_dir)
         stats["Failed to analyze"] = failures
+        stats["Compiler errors"] = errors
         stats["Number of assertions"] = asserts
-        if toplist:
-            toplist = map(lambda x: "%s [%d]" % x, toplist)
-            stats["Top asserts"] = "<br>\n".join(toplist)
+        if assert_toplist:
+            assert_toplist = map(lambda x: "%s [%d]" % x, assert_toplist)
+            stats["Top asserts"] = "<br>\n".join(assert_toplist)
+        if error_toplist:
+            error_toplist = map(lambda x: "%s [%d]" % x, error_toplist)
+            stats["Top errors"] = "<br>\n".join(error_toplist)
         if "LOC" in project:
             stats["Lines of code"] = project["LOC"]
 
