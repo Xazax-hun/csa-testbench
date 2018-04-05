@@ -49,10 +49,12 @@ class HTMLPrinter(object):
         self.html_path = path
         self.charts = config.get("charts", ["Duration", "Result count"])
         self.excludes = ["TU times"]
+        self.as_comment = ["Analyzer version"]
         self.projects = {}
         with open(self.html_path, 'w') as stat_html:
             stat_html.write(header)
-            stat_html.write("<!-- %s -->\n" % json.dumps(config))
+            stat_html.write("<!-- %s -->\n" %
+                            escape(json.dumps(config)))
 
     def finish(self):
         with open(self.html_path, 'a') as stat_html:
@@ -81,7 +83,8 @@ class HTMLPrinter(object):
         stat_html.write('<tbody>\n')
 
         for stat_name in keys:
-            if stat_name in self.excludes:
+            if stat_name in self.excludes or \
+               stat_name in self.as_comment:
                 continue
             stat_html.write("<tr>\n")
             stat_html.write("<td>%s</td>" % escape(stat_name))
@@ -93,6 +96,16 @@ class HTMLPrinter(object):
             stat_html.write("</tr>\n")
         stat_html.write('</tbody>\n')
         stat_html.write("</table>\n\n")
+
+        # Output some values as comments.
+        for stat_name in self.as_comment:
+            for conf in configurations:
+                val = "-"
+                if stat_name in data[conf]:
+                    val = str(data[conf][stat_name])
+                stat_html.write("<!-- %s[%s]=%s -->\n" %
+                                (escape(conf), escape(stat_name), escape(val)))
+
         self._generate_time_histogram(stat_html, configurations, data)
         stat_html.close()
 
