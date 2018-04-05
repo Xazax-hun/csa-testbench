@@ -1,4 +1,5 @@
 from collections import defaultdict
+from cgi import escape
 import json
 
 try:
@@ -68,13 +69,13 @@ class HTMLPrinter(object):
             for stat_name in val:
                 keys.add(stat_name)
 
-        stat_html.write("<h2>%s</h2>\n" % name)
+        stat_html.write("<h2>%s</h2>\n" % escape(name))
         stat_html.write('<table class="table table-bordered table-striped table-sm">\n')
         stat_html.write('<thead class="thead-dark">')
         stat_html.write("<tr>\n")
         stat_html.write("<th>Statistic Name</th>")
         for conf in configurations:
-            stat_html.write("<th>%s</th>" % conf)
+            stat_html.write("<th>%s</th>" % escape(conf))
         stat_html.write("</tr>\n")
         stat_html.write('</thread>\n')
         stat_html.write('<tbody>\n')
@@ -83,7 +84,7 @@ class HTMLPrinter(object):
             if stat_name in self.excludes:
                 continue
             stat_html.write("<tr>\n")
-            stat_html.write("<td>%s</td>" % stat_name)
+            stat_html.write("<td>%s</td>" % escape(stat_name))
             for conf in configurations:
                 val = "-"
                 if stat_name in data[conf]:
@@ -138,5 +139,5 @@ class HTMLPrinter(object):
             fig = go.Figure(data=bars, layout=layout)
             div = py.plot(fig, show_link=False, include_plotlyjs=False,
                           output_type='div', auto_open=False)
-            stat_html.write("<h2>%s</h2>\n" % chart)
+            stat_html.write("<h2>%s</h2>\n" % escape(chart))
             stat_html.write(div)
