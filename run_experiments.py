@@ -31,16 +31,18 @@ def load_config(filename):
     return config_dict
 
 
-def run_command(cmd, print_error=True, cwd=None, env=None):
+def run_command(cmd, print_error=True, cwd=None, env=None, shell=False):
     """Wrapper function to handle running system commands."""
 
-    proc = sp.Popen(shlex.split(cmd), stdin=sp.PIPE, stdout=sp.PIPE,
-                    stderr=sp.PIPE, cwd=cwd, env=env)
+    args = shlex.split(cmd) if not shell else cmd
+    proc = sp.Popen(args, stdin=sp.PIPE, stdout=sp.PIPE,
+                    stderr=sp.PIPE, cwd=cwd, env=env, shell=shell)
     stdout, stderr = proc.communicate()
     # CC usually does not return with 0, but printing empty
     # error messages in that case is needless.
     if proc.returncode is not 0 and print_error:
-        sys.stderr.write("[ERROR] %s\n" % str(stderr))
+        output = stderr if len(stderr) != 0 else stdout
+        sys.stderr.write("[ERROR] %s\n" % str(output))
     return proc.returncode, stdout, stderr
 
 
@@ -115,7 +117,7 @@ def clone_project(project, project_dir):
     return True
 
 
-def identify_build_system(project_dir):
+def identify_build_system(project_dir, configure):
     """Identifies the build system of a project.
 
     Used heuristics:
@@ -139,6 +141,11 @@ def identify_build_system(project_dir):
         return 'cmake'
 
     if 'Makefile' in project_files:
+        return 'makefile'
+
+    # When there is a custom configure command,
+    # fall back to make files.
+    if not configure:
         return 'makefile'
 
     if 'autogen.sh' in project_files:
@@ -180,10 +187,14 @@ def log_project(project, project_dir, num_jobs):
     # The following runs the 'configure' script if needed.
     if 'prepared' in project:
         return True
+    configure = True
+    if 'configure_command' in project:
+        _, _, _ = run_command(project['configure_command'],
+                              True, project_dir, shell=True)
     if 'make_command' in project:
         build_sys = 'userprovided'
     else:
-        build_sys = identify_build_system(project_dir)
+        build_sys = identify_build_system(project_dir, configure)
     failed = False
     if not build_sys:
         failed = True
@@ -191,17 +202,17 @@ def log_project(project, project_dir, num_jobs):
     if build_sys == 'cmake':
         cmd = "cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B%s -H%s" \
               % (project_dir, project_dir)
-        failed, _, _ = run_command(cmd)
+        failed, _, _ = run_command(cmd, True, project_dir)
     elif build_sys == 'makefile':
         json_path = os.path.join(project_dir, "compile_commands.json")
         cmd = "CodeChecker log -b 'make -C%s -j%d' -o %s" \
               % (project_dir, num_jobs, json_path)
-        failed, _, _ = run_command(cmd)
+        failed, _, _ = run_command(cmd, True, project_dir)
     elif build_sys == 'userprovided':
         json_path = os.path.join(project_dir, "compile_commands.json")
         cmd = "CodeChecker log -b '%s' -o %s" \
               % (project['make_command'], json_path)
-        failed, _, _ = run_command(cmd, True, project_dir)
+        failed, _, _ = run_command(cmd, True, project_dir, shell=True)
     if failed:
         shutil.rmtree(project_dir)
         return False

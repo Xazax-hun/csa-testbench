@@ -115,6 +115,7 @@ a name. Every other configuration value is optional.
       "name": "tmux",
       "url": "https://github.com/tmux/tmux.git",
       "tag": "2.6",
+      "configure_command": "sh autogen.sh && ./configure",
       "configurations": [
         {
           "name": "original",
@@ -186,8 +187,12 @@ apply to every configuration.
 before and after a patch is applied.
 * **tag**: A commit hash or tag name of a project that will be checked out. It can be
 useful to make the experiments reproducible, i.e.: always testing with the same code.
-* **make_command**: If this configuration value is set the script will not try to 
+* **configure_command**: If this configuration value is set the script will issue this
+command before building the project. This command will not be logged by CodeChecker.
+The working directory will be the root of the project.
+* **make_command**: If this configuration value is set the script will not try to
 infer the build system but invoke the make command specified in this value.
+The working directory will be the root of the project.
 * **prepared**: If this configuration value is specified, the script will not attempt to
 check out the project and not attempt to create a build log. It will assume that a folder
 with the name of the project exists and contains a `compile_commands.json`. It will use that
