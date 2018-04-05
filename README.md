@@ -118,11 +118,7 @@ a name. Every other configuration value is optional.
       "configure_command": "sh autogen.sh && ./configure",
       "configurations": [
         {
-          "name": "original",
-          "clang_sa_args": "",
-          "analyze_args": "",
-          "store_args": "",
-          "clang_path": ""
+          "name": "original"
         },
         {
           "name": "with_stats",

@@ -240,7 +240,7 @@ def check_project(project, project_dir, config, num_jobs):
         if "configurations" in config:
             project["configurations"] = config["configurations"]
         else:
-            project["configurations"] = [{"name": "", "clang_sa_args": ""}]
+            project["configurations"] = [{"name": ""}]
     for run_config in project["configurations"]:
         result_dir = "cc_results"
         if run_config["name"] != "":
