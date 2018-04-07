@@ -42,7 +42,8 @@
     },
     {
       "name": "Bitcoin",
-      "url": "https://github.com/bitcoin/bitcoin.git"
+      "url": "https://github.com/bitcoin/bitcoin.git",
+      "configure_command": "./autogen.sh && ./configure --disable-wallet --disable-static --disable-tests"
     },
     {
       "name": "LLVM",
@@ -58,7 +59,8 @@
     },
     {
       "name": "protobuf",
-      "url": "https://github.com/google/protobuf.git"
+      "url": "https://github.com/google/protobuf.git",
+      "configure_command": "sh autogen.sh && ./configure --disable-static"
     }
   ],
   "configurations": [
