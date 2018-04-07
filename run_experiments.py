@@ -101,7 +101,7 @@ def clone_project(project, project_dir):
     print("[%s] Checking out project... " % project['name'])
     sys.stdout.flush()
     clone_failed, _, clone_err = run_command(cmd['clone'], print_error=False)
-    if 'master' in str(clone_err):
+    if clone_failed and 'master' in str(clone_err):
         clone_failed, _, _ = run_command(
             'git clone %s %s' % (project['url'], project_dir))
     if clone_failed:
