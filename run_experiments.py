@@ -166,17 +166,17 @@ def identify_build_system(project_dir, configure):
     return None
 
 
-def check_logged(projects_root):
-    """Post-script cleanup.
+def check_logged(projects_root, projects):
+    """ Count successfully checked projects.
+        Additional cleanups might be done here. """
 
-    FIXME: instead of listing all directories only list the ones
-           that were in the config file. What should we clean up at all?
-    """
-
+    configured_projects = set([project["name"] for project in projects])
     projects = os.listdir(projects_root)
     num = 0
     for project in projects:
         if os.path.isfile(os.path.join(projects_root, project)):
+            continue
+        if project not in configured_projects:
             continue
         num += 1
     return num
@@ -427,7 +427,7 @@ def main():
 
     printer.finish()
 
-    logged_projects = check_logged(projects_root)
+    logged_projects = check_logged(projects_root, config['projects'])
     print("Number of analyzed projects: %d / %d"
           % (logged_projects, len(config['projects'])))
     print("Results can be viewed at '%s'." % config['CodeChecker']['url'])
