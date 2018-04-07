@@ -84,7 +84,8 @@ def summ_stats_on_file(filename, stat_map, per_helper, group):
         type_pattern += t.value + '|'
     type_pattern = type_pattern[:-1]
     stat_pattern = re.compile("([0-9]+(?:\.[0-9]+)?) (.+) - (The (" + type_pattern + ") .+)")
-    timer_pattern = re.compile(".+\(.+\).+\(.+\).+\(.+\)(.+)\(.+\).+Analyzer Total Time")
+    timer_pattern = re.compile(".+\(.+\).+\(.+\).+\(.+\)(.+)\(.+\).+analyzer total time",
+                               re.IGNORECASE)
     act_nums = {}
     per_to_num_map = {}
     per_to_update = {}
