@@ -406,6 +406,9 @@ def main():
     config_path = args.config
     print("Using configuration file '%s'." % config_path)
     config = load_config(config_path)
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    _, out, _ = run_command("git rev-parse HEAD", False, cwd=script_dir)
+    config["Script version"] = out
     print("Number of projects to process: %d.\n" % len(config['projects']))
 
     projects_root = os.path.join(TESTBENCH_ROOT, 'projects')
