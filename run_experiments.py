@@ -188,6 +188,7 @@ def log_project(project, project_dir, num_jobs):
         return True
     configure = True
     if 'configure_command' in project:
+        configure = False
         _, _, _ = run_command(project['configure_command'],
                               True, project_dir, shell=True)
     if 'make_command' in project:
@@ -198,17 +199,16 @@ def log_project(project, project_dir, num_jobs):
     if not build_sys:
         failed = True
     print("[%s] Generating build log... " % project['name'])
+    json_path = os.path.join(project_dir, "compile_commands.json")
     if build_sys == 'cmake':
         cmd = "cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B%s -H%s" \
               % (project_dir, project_dir)
         failed, _, _ = run_command(cmd, True, project_dir)
     elif build_sys == 'makefile':
-        json_path = os.path.join(project_dir, "compile_commands.json")
         cmd = "CodeChecker log -b 'make -C%s -j%d' -o %s" \
               % (project_dir, num_jobs, json_path)
         failed, _, _ = run_command(cmd, True, project_dir)
     elif build_sys == 'userprovided':
-        json_path = os.path.join(project_dir, "compile_commands.json")
         cmd = "CodeChecker log -b '%s' -o %s" \
               % (project['make_command'], json_path)
         failed, _, _ = run_command(cmd, True, project_dir, shell=True)
