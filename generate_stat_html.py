@@ -115,8 +115,12 @@ class HTMLPrinter(object):
         traces = []
         for conf in configurations:
             if "TU times" in data[conf]:
+                if len(data[conf]["TU times"]) == 0:
+                    continue
                 traces.append(go.Histogram(x=data[conf]["TU times"],
                                            name=conf))
+        if len(traces) == 0:
+            return
         layout = go.Layout(barmode='overlay')
         fig = go.Figure(data=traces, layout=layout)
         div = py.plot(fig, show_link=False, include_plotlyjs=False,
