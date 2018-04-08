@@ -14,11 +14,13 @@
     },
     {
       "name": "OpenSSL",
-      "url": "https://github.com/openssl/openssl.git"
+      "url": "https://github.com/openssl/openssl.git",
+      "configure_command": "./config"
     },
     {
       "name": "PostgreSQL",
-      "url": "https://github.com/postgres/postgres.git"
+      "url": "https://github.com/postgres/postgres.git",
+      "configure_command": "./configure --disable-yasm"
     },
     {
       "name": "Redis",
