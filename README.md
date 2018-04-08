@@ -137,6 +137,7 @@ a name. Every other configuration value is optional.
       "url": "https://github.com/antirez/redis.git",
       "tag": "727dd43614ec45e23e2dedbba08b393323feaa4f",
       "make_command": "make"
+      "binary_dir": "build"
     },
     {
       "name": "xerces-c",
@@ -189,6 +190,8 @@ The working directory will be the root of the project.
 * **make_command**: If this configuration value is set the script will not try to
 infer the build system but invoke the make command specified in this value.
 The working directory will be the root of the project.
+* **binary_dir**: For doing out of tree builds the binary dir can be specified. It can be
+relative to the project root. Currently only supported for cmake projects.
 * **prepared**: If this configuration value is specified, the script will not attempt to
 check out the project and not attempt to create a build log. It will assume that a folder
 with the name of the project exists and contains a `compile_commands.json`. It will use that

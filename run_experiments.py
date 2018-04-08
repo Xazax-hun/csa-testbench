@@ -1,6 +1,7 @@
 from __future__ import print_function
 import argparse as ap
 from collections import Counter
+import errno
 import json
 import multiprocessing
 import os
@@ -17,6 +18,14 @@ from summarize_gcov import summarize_gcov
 from generate_stat_html import HTMLPrinter
 
 TESTBENCH_ROOT = os.getcwd()
+
+
+def make_dir(dir):
+    try:
+        os.makedirs(dir)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
 
 
 def load_config(filename):
@@ -200,10 +209,14 @@ def log_project(project, project_dir, num_jobs):
         failed = True
     print("[%s] Generating build log... " % project['name'])
     json_path = os.path.join(project_dir, "compile_commands.json")
+    binary_dir = project_dir
+    if "binary_dir" in project:
+        binary_dir = os.path.join(binary_dir, project["binary_dir"])
+        make_dir(binary_dir)
     if build_sys == 'cmake':
         cmd = "cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B%s -H%s" \
-              % (project_dir, project_dir)
-        failed, _, _ = run_command(cmd, True, project_dir)
+              % (binary_dir, project_dir)
+        failed, _, _ = run_command(cmd, True, binary_dir)
     elif build_sys == 'makefile':
         cmd = "CodeChecker log -b 'make -C%s -j%d' -o %s" \
               % (project_dir, num_jobs, json_path)
@@ -234,7 +247,10 @@ def update_path(path, env=None):
 def check_project(project, project_dir, config, num_jobs):
     """Analyze project and store the results with CodeChecker."""
 
-    json_path = os.path.join(project_dir, "compile_commands.json")
+    binary_dir = project_dir
+    if "binary_dir" in project:
+        binary_dir = os.path.join(binary_dir, project["binary_dir"])
+    json_path = os.path.join(binary_dir, "compile_commands.json")
     if "configurations" not in project:
         if "configurations" in config:
             project["configurations"] = config["configurations"]
@@ -412,8 +428,7 @@ def main():
     print("Number of projects to process: %d.\n" % len(config['projects']))
 
     projects_root = os.path.join(TESTBENCH_ROOT, 'projects')
-    if not os.path.isdir(projects_root):
-        os.mkdir(projects_root)
+    make_dir(projects_root)
 
     stats_html = os.path.join(projects_root, "stats.html")
     printer = HTMLPrinter(stats_html, config)

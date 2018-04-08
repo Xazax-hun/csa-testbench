@@ -49,7 +49,8 @@
     },
     {
       "name": "LLVM",
-      "url": "https://github.com/llvm-mirror/llvm.git"
+      "url": "https://github.com/llvm-mirror/llvm.git",
+      "binary_dir": "build"
     },
     {
       "name": "libWebM",
