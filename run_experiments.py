@@ -1,6 +1,7 @@
 from __future__ import print_function
 import argparse as ap
 from collections import Counter
+from distutils.dir_util import copy_tree
 import errno
 import json
 import multiprocessing
@@ -10,7 +11,9 @@ import shlex
 import shutil
 import subprocess as sp
 import sys
+import tarfile
 import tempfile
+from urllib import urlretrieve
 import zipfile
 
 from summarize_sa_stats import summ_stats
@@ -83,6 +86,25 @@ def clone_project(project, project_dir):
     if os.path.isdir(project_dir):
         shutil.rmtree(project_dir)
 
+    print("[%s] Checking out project... " % project['name'])
+
+    # Check if tarball is provided.
+    # TODO: support zip files.
+    if project['url'].endswith((".tar.gz", ".tar.xz", ".tar.lz", ".tgz",
+                                ".tbz", ".tlz", ".txz")):
+        path, _ = urlretrieve(project['url'])
+        with tarfile.open(path) as tar:
+            tar.extractall(project_dir)
+        content = os.listdir(project_dir)
+        # If the tar contains a single directory, move contents up.
+        if len(content) == 1:
+            inner = os.path.join(project_dir, content[0])
+            # shutil.copytree fails to copy to existing dir.
+            copy_tree(inner, project_dir)
+            shutil.rmtree(inner)
+        count_lines(project, project_dir)
+        return True
+
     # If there is no tag specified, we clone the master branch.
     # This presumes that a master branch exists.
     if 'tag' not in project:
@@ -107,7 +129,6 @@ def clone_project(project, project_dir):
     else:
         cmd['clone'] += ' --depth 1 --branch %s --single-branch' % project['tag']
 
-    print("[%s] Checking out project... " % project['name'])
     sys.stdout.flush()
     clone_failed, _, clone_err = run_command(cmd['clone'], print_error=False)
     if clone_failed and 'master' in str(clone_err):
@@ -204,9 +225,7 @@ def log_project(project, project_dir, num_jobs):
         build_sys = 'userprovided'
     else:
         build_sys = identify_build_system(project_dir, configure)
-    failed = False
-    if not build_sys:
-        failed = True
+    failed = not build_sys
     print("[%s] Generating build log... " % project['name'])
     json_path = os.path.join(project_dir, "compile_commands.json")
     binary_dir = project_dir

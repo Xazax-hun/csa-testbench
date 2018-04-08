@@ -29,7 +29,7 @@ Running Experiments
 
 There is a `run_experiments.py` script to run the Clang Static Analyzer on a
 set of projects and create a report. This script will download the projects
-from a git repository, figure out the build system, generate a build log,
+from a git repository or tarball, figure out the build system, generate a build log,
 run the Static Analyzer, collect the output, and generate a report.
 
 Example usage:
@@ -58,7 +58,7 @@ Example configuration:
   ],
   "configurations": [
     {
-      "name": "original",
+      "name": "baseline",
       "clang_sa_args": "-Xclang -analyzer-stats"
     },
     {
@@ -83,7 +83,8 @@ should be installed and available in the `PATH`. The packages from the
 `python_requirements` file should also be installed.
 
 These scripts are written in Python 2 for improved compatibility with
-CodeChecker.
+CodeChecker. Once CodeChecker is ported to Python 3, this project will
+follow.
 
 If `cloc` utility is in the path the script will also count the lines of
 code of the analyzed projects and include it in the final report.
@@ -105,7 +106,7 @@ Example coverage report:
 ### Configuration
 
 There is an example configuration below. A minimal configuration should contain a list
-of projects and a CodeChecker URL. Each project should at least contain a git URL and
+of projects and a CodeChecker URL. Each project should at least contain a git or tarball URL and
 a name. Every other configuration value is optional.
 
 ```json
@@ -125,6 +126,10 @@ a name. Every other configuration value is optional.
           "clang_sa_args": "-Xclang -analyzer-stats"
         }
       ]
+    },
+    {
+      "name": "SQLite",
+      "url": "https://www.sqlite.org/2018/sqlite-autoconf-3230000.tar.gz"
     },
     {
       "name": "bitcoin",

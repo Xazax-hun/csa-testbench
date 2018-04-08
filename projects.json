@@ -61,6 +61,10 @@
       "url": "https://github.com/glennrp/libpng.git"
     },
     {
+      "name": "SQLite",
+      "url": "https://www.sqlite.org/2018/sqlite-autoconf-3230000.tar.gz"
+    },
+    {
       "name": "protobuf",
       "url": "https://github.com/google/protobuf.git",
       "configure_command": "sh autogen.sh && ./configure --disable-static"
