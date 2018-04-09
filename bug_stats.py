@@ -11,11 +11,10 @@ import math
 import os
 import subprocess
 import sys
-
 from time import sleep
 
 
-# === Utility functions ===
+# ========================== UTILITY FUNCTIONS ===============================
 def call_command(command):
     """ Call an external command and return with (output, return_code)."""
 
@@ -26,6 +25,17 @@ def call_command(command):
         return out, 0
     except subprocess.CalledProcessError as ex:
         return ex.output, ex.returncode
+
+
+def cc_command_builder(cmds, extra_args=None):
+    """
+    Create a CodeChecker command from the given commands and extra arguments.
+    """
+    if not extra_args:
+        extra_args = []
+
+    return ["CodeChecker"] + cmds + extra_args + _CodeCheckerSharedArgs +\
+           ["-o", "json"]
 
 
 def print_table(lines, separate_head=True):
@@ -57,10 +67,10 @@ def print_table(lines, separate_head=True):
     print("-" * (sum(widths) + 3 * (len(widths) - 1)))
     print('')
 
+
 # ============================== ENTRY POINT =================================
 
-# Check if CodeChecker exists
-
+# Check if CodeChecker exists.
 try:
     with open(os.devnull, 'w') as nullfile:
         r = subprocess.call(["CodeChecker"], stderr=nullfile, stdout=nullfile)
@@ -80,73 +90,73 @@ except OSError:
 parser = argparse.ArgumentParser(
     prog='BugStats',
     description='''BugStats can print BugPath statistics from CodeChecker
-results.'''
+results. A CodeChecker must exist in the PATH environment variable to use this
+tool.'''
 )
 
-# Connection arguments.
-parser.add_argument('--host', type=str, dest="host",
-                    default='localhost',
-                    help='Server host.')
-parser.add_argument('--port', type=str, dest="port",
-                    default=8001,
-                    required=True, help='HTTP Server port.')
+parser.add_argument('--url', type=str, dest="url",
+                    default='http://localhost:8001/Default',
+                    help="Product URL where the results should be queried "
+                         "from.")
 
-# Source arguments.
-name_group = parser.add_mutually_exclusive_group(required=True)
-name_group.add_argument('-n', '--name', nargs='+', type=str, dest="names",
+mode_group = parser.add_argument_group('mode arguments')
+mode_group = mode_group.add_mutually_exclusive_group(required=True)
+mode_group.add_argument('-n', '--name', nargs='+', type=str, dest="names",
                         help='Runs to include in the output '
                              '(single full run names)')
-name_group.add_argument('-p', '--project', type=str, dest="project",
-                        help='Project group (one XTU and one non-XTU) '
-                             'to handle')
-name_group.add_argument('-a', '--all', action='store_true',
+mode_group.add_argument('-a', '--all', action='store_true',
                         dest="all",
                         help='Calculate statistics for ALL project found '
                              'on the server.')
-
-# Diff arguments.
-name_group.add_argument('-c', '--compare', '--diff',
+mode_group.add_argument('-c', '--compare', '--diff',
                         action='store_true',
                         dest="diff",
                         help='Calculate statistics for a project diff.')
 
-parser.add_argument('--basename', type=str, dest="DPbase",
-                    required=False,
-                    help='Base name.')
-parser.add_argument('--newname', type=str, dest="DPnew",
-                    required=False,
-                    help='New name.')
+diff_group = parser.add_argument_group(
+    'difference calculation arguments',
+    "These arguments are used to set what kind of difference CodeChecker must "
+    "generate. The meaning of these values are in line with `CodeChecker cmd "
+    "diff`, see the help or user guide for that to understand. These options "
+    "are only effective if '-c/--compare/--diff' is given!")
+diff_group.add_argument('--basename', type=str, dest="DPbase",
+                        required=False,
+                        help='Base name.')
+diff_group.add_argument('--newname', type=str, dest="DPnew",
+                        required=False,
+                        help='New name.')
 
-diff_group = parser.add_mutually_exclusive_group(required=False)
-diff_group.add_argument('--new', action="store_true", dest="DBnew",
-                        help="Show new results.")
-diff_group.add_argument('--resolved', action="store_true", dest="DBresolved",
-                        help="Show resolved results.")
-diff_group.add_argument('--unresolved', action="store_true",
-                        dest="DBunresolved",
-                        help="Show unresolved results.")
+diff_mgroup = diff_group.add_mutually_exclusive_group(required=False)
+diff_mgroup.add_argument('--new', action="store_true", dest="DBnew",
+                         help="Show new results.")
+diff_mgroup.add_argument('--resolved', action="store_true", dest="DBresolved",
+                         help="Show resolved results.")
+diff_mgroup.add_argument('--unresolved', action="store_true",
+                         dest="DBunresolved",
+                         help="Show unresolved results.")
 
-# Presentation arguments.
-parser.add_argument('--no-histogram',
-                    action='store_false',
-                    dest="histogram",
-                    help='Disable histogram generation. '
-                         'Histogram generation requires the `data_hacks` '
-                         'pip module.')
+presentation = parser.add_argument_group('presentation arguments')
+presentation.add_argument('--no-histogram',
+                          action='store_false',
+                          dest="histogram",
+                          help='Disable histogram generation. '
+                               'Histogram generation requires the '
+                               '`data_hacks` pip module.')
 
-parser.add_argument('-d', '--deduplicate',
-                    action='store_true',
-                    dest="deduplicate",
-                    help='Deduplicate bugs when counting. '
-                         'Deduplication doesn\'t count the same bug (based '
-                         'on the unique bug_id) multiple times in ANY of '
-                         'the results shown.')
+presentation.add_argument('-d', '--deduplicate',
+                          action='store_true',
+                          dest="deduplicate",
+                          help='Deduplicate bugs when counting. '
+                               'Deduplication doesn\'t count the same bug '
+                               '(based on the unique bug_id) multiple times '
+                               'in ANY of the results shown.')
 
-parser.add_argument('-m', '--messages', '--verbose-duplicates',
-                    action='store_true',
-                    dest="verbose_duplicates",
-                    help='When --deduplicate is enabled, the duplicate bugs '
-                         'list will show more details (file, line, message).')
+presentation.add_argument('-m', '--messages', '--verbose-duplicates',
+                          action='store_true',
+                          dest="verbose_duplicates",
+                          help='When --deduplicate is enabled, the duplicate '
+                               'bugs list will show more details: (file, '
+                               'line, message).')
 
 args = parser.parse_args()
 
@@ -154,9 +164,16 @@ if not args.deduplicate and args.verbose_duplicates:
     print("WARNING! -m/--verbose-duplicates/--messages has no effect if "
           "-d/--deduplicate is not enabled.")
 
+if not args.diff and (args.DPbase or args.DPnew or args.DBnew or
+                      args.DBresolved or args.DBunresolved):
+    print("ERROR! Diff arguments such as --basename/--newname/--new/"
+          "--resolved/--unresolved are only effective if -c/--compare/--diff "
+          "is given.")
+    sys.exit(2)
+
 ##############################################################################
 
-# Check if histogram module exists
+# Check if histogram module exists.
 Histogram = False
 if args.histogram:
     try:
@@ -171,24 +188,19 @@ if args.histogram:
         # Histogram generation remains disabled.
         pass
 
-    # if not Histogram:
-    #     print("WARNING! `histogram.py` not found --- "
-    #           "not generating histograms.")
-    #     print("To enable, please `pip install data_hacks`.")
-    #     print("To squelch this error, please specify '--no-histogram'.")
-    #     print("\n\n")
-    #     sleep(1)
+    if not Histogram:
+        print("WARNING! `histogram.py` not found --- "
+              "not generating histograms.")
+        print("To enable, please `pip install data_hacks`.")
+        print("To squelch this error, please specify '--no-histogram'.")
+        print("\n\n")
+        sleep(1)
 
 ##############################################################################
 
-_CodeCheckerSharedArgs = ["--host", args.host, "--port", args.port]
+_CodeCheckerSharedArgs = ["--url", args.url]
 
-
-def cc_command_builder(cmds, extra_args=[]):
-    return ["CodeChecker"] + cmds + extra_args + _CodeCheckerSharedArgs +\
-           ["-o", "json"]
-
-# Check if the projects exist
+# Check if the projects exist.
 valid_projects_on_server, _ = call_command(
     cc_command_builder(["cmd", "runs"]))
 
@@ -220,22 +232,20 @@ if not args.diff:
 
             try:
                 results, _ = call_command(cc_command_builder(
-                    ["cmd", "results"], ["--name", project]
+                    ["cmd", "results"], [project]
                 ))
                 results = json.loads(results)
                 project_results.append((project, results))
             except ValueError:
                 print("ERROR! CodeChecker didn't return proper JSON?! "
                       "(normal results)")
+                print(results)
                 continue
 
         return project_results
 elif args.diff:
-    # If we are querying a diff, the result generator is a bit diff-erent
-    # TODO: Revise this lame pun.
-
-    def get_results(projects=[]):
-        if len(projects) != 3:
+    def get_results(projects=None):
+        if not projects or len(projects) != 3:
             print("ERROR! In diff mode, exactly THREE args must be "
                   "specified in [base, new, mode] order.")
             sys.exit(1)
@@ -253,12 +263,16 @@ elif args.diff:
                                   "--newname", new,
                                   "--" + mode]
             ))
+            results = '\n'.join([line for line in results.split('\n')
+                                 if 'INFO' not in line
+                                 and 'DEBUG' not in line])
             results = json.loads(results)
             return [(
                 "diff({1}, {2}, {0})".format(mode.upper(), base, new),
                 results
             )]
         except ValueError:
+            print(results)
             print("ERROR! CodeChecker didn't return proper JSON?! "
                   "(diff results)")
             sys.exit(1)
@@ -274,32 +288,11 @@ if args.names:
     if len(nonexistent) > 0:
         print("WARNING! Ignoring specified but NON-EXISTENT runs: " +
               ', '.join(nonexistent))
-elif args.project:
-    print("Getting result metrics for project " + args.project)
-
-    # Search for valid project names
-    candidates = set([project for project in existing_runs
-                      if args.project in project])
-    xtus = [project for project in candidates
-            if 'noXTU' not in project and 'noxtu' not in project]
-    nonxtus = list(candidates - set(xtus))
-
-    xtus.sort()
-    nonxtus.sort()
-
-    if len(xtus) != 1 or len(nonxtus) != 1:
-        print("Multiple options available...")
-        print("Using newest runs: {0} and {1}".format(
-            xtus[len(xtus) - 1],
-            nonxtus[len(nonxtus) - 1]
-        ))
-
-    project_names = [xtus[len(xtus) - 1], nonxtus[len(nonxtus) - 1]]
 elif args.all:
     print("Calculating for every project...")
     project_names = existing_runs
 elif args.diff:
-    if args.DPbase is None or args.DPnew is None:
+    if not args.DPbase or not args.DPnew:
         print("ERROR! With -c/--compare/--diff, you MUST also specify "
               "--basename and --newname, the projects to compare.")
         sys.exit(1)
@@ -313,8 +306,8 @@ elif args.diff:
     else:
         print("ERROR! With -c/--compare/--diff, you MUST also specify "
               "exactly ONE of the following:\n"
-              "   --new                        Show NEW bugs in the diff\n"
-              "   --resolved                   Show the RESOLVED bugs\n"
+              "   --new                        Show NEW bugs in the diff.\n"
+              "   --resolved                   Show the RESOLVED bugs.\n"
               "   --unresolved                 Show the UNRESOLVED bugs.")
         sys.exit(1)
 
@@ -323,8 +316,7 @@ else:
     project_names = []
 
 
-# ----------------------------------------------------
-
+##############################################################################
 
 def calculate_metrics(bugPathLengths):
     bugPathLengths.sort()
@@ -367,6 +359,7 @@ def calculate_metrics(bugPathLengths):
     print("")
     for percentile, value in percentile_values:
         print(" %:      {0}% percentile: {1}".format(percentile, value))
+
 
 if Histogram:
     def make_histogram(bug_path_lengths):
@@ -433,21 +426,19 @@ for project, results in get_results(project_names):
 
         # Get the entire BugPaths from the result.
         if not args.deduplicate:
-            bug_paths.append(res['bugPath'])
+            bug_paths.append(int(res['bugPathLength']))
         else:
             # Duplicated bugs must only be calculated ONCE if
             # deduplication is enabled.
             #
             # In this case, only the SHORTEST (as per discussed with @dkrupp)
             # BugPath length is calculated.
-            bpl = len(res['bugPath'])
+            bpl = int(res['bugPathLength'])
             if duplicate_bughashes[
                     res['bugHash']]['shortest_length'] is None \
                     or duplicate_bughashes[
                         res['bugHash']]['shortest_length'] > bpl:
                 duplicate_bughashes[res['bugHash']]['shortest_length'] = bpl
-                duplicate_bughashes[res['bugHash']]['shortest_path'] = res[
-                    'bugPath']
 
     # If deduplication is enabled, we need to add the shortest paths to the
     # list... otherwise bug_paths already contains all data.
@@ -520,18 +511,11 @@ for project, results in get_results(project_names):
         print_table(rows)
 
     # Calculate metrics based on the BugPath lengths
-    bug_path_lengths = [len(bp) for bp in bug_paths]
-    if any([True if bpl is None else False for bpl in bug_path_lengths]):
-        print("ERROR! CodeChecker server didn't return new enough ReportData "
-              "structure containing BugPaths.")
-        print("ERROR: !! OUTDATED SERVER !!")
-        sys.exit(2)
-
     if args.deduplicate:
         print("NOTICE: Metrics{0}will ONLY "
               "count DEDUPLICATED! bugs.".
               format((" and histogram " if Histogram else " "))
               )
 
-    calculate_metrics(bug_path_lengths)
-    make_histogram(bug_path_lengths)
+    calculate_metrics(bug_paths)
+    make_histogram(bug_paths)
