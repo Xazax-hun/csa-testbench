@@ -141,7 +141,7 @@ a name. Every other configuration value is optional.
       "name": "redis",
       "url": "https://github.com/antirez/redis.git",
       "tag": "727dd43614ec45e23e2dedbba08b393323feaa4f",
-      "make_command": "make"
+      "make_command": "make",
       "binary_dir": "build"
     },
     {
@@ -208,3 +208,26 @@ file to analyze the project.
 These scripts will not figure out the dependencies of a project. It is the user's job
 to make sure the projects in the configuration file can be compiled on the machine where
 the experiments are run.
+
+Measuring bug path length statistics
+------------------------------------
+
+The `bug_stats.py` file can be used to calculate descriptive statistics on
+results found by the analyzer. It takes the "product URL" argument of a
+**running** CodeChecker server (`--url http://localhost:8001/Default`) and
+some project names (`--name Project1 Project2`, or `--all`) and generates
+statistics and histogram for each project given.
+
+```bash
+bug_stats.py --url http://example.org:8080/MyProduct --name my_run
+```
+
+![Example bug statistics](https://raw.githubusercontent.com/Xazax-hun/csa-testbench/master/pictures/bug_stats.png)
+
+This script also support generating the statistics of a difference between two
+runs, over the bug reports presented by `CodeChecker cmd diff`:
+
+```bash
+bug_stats.py --url http://example.org:8080/MyProduct --diff \
+  --basename baseline --newname csa_patched --new
+```
