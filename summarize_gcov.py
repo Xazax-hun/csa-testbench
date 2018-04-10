@@ -52,4 +52,7 @@ def summarize_gcov(path):
 
 
 if __name__ == "__main__":
-    summarize_gcov(sys.argv[1])
+    import json
+    res = summarize_gcov(sys.argv[1])
+    with open(sys.argv[2], "w") as f:
+        json.dump(res, f, indent=2)
