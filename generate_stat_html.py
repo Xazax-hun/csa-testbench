@@ -29,16 +29,47 @@ header = """
           integrity="sha384-uefMccjFJAIv6A+rW+L4AHf99KvxDjWSu1z9VI8SKNVmz4sk7buKt/6v9KI65qnm"
           crossorigin="anonymous"></script>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script type="text/javascript">
+      // Reload Poltly graphs on tab change.
+      $(document).ready(function () {
+          $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+              var target = $(e.target).attr("href");
+              var toRemove = [];
+              var toAppend = [];
+              $(target).children().each(function (index, element) {
+                  if (element.tagName === "SCRIPT") {
+                      var script = document.createElement('script');
+                      script.type = 'text/javascript';
+                      script.text = element.text
+                      toRemove.push(element);
+                      toAppend.push(script);
+                  }
+              });
+              toRemove.forEach(function (item) {
+                  item.remove();
+              });
+              toAppend.forEach(function (item) {
+                  $(target).append(item);
+              });
+              $(target).children().each(function (index, element) {
+                   if (element.className.includes("plotly-graph-div")) {
+                       Plotly.relayout(element, {height: 500});
+                   }
+               });
+          })
+      });
+  </script>
+  <style> .tab-content { padding: 10px; } </style>
 </head>
 <body>
 <div class="jumbotron text-center">
   <h1>Detailed Static Analyzer Statistics</h1>
 </div>
 <div class="container">
-<h1>Tables</h1>
 """
 
 footer = """
+</div>
 </div>
 <footer>
   <div class="container-fluid bg-light p-3 mb-2">
@@ -63,6 +94,23 @@ class HTMLPrinter(object):
             stat_html.write(header)
             stat_html.write("<!-- %s -->\n" %
                             escape(json.dumps(config)))
+            # Generate nav bar.
+            stat_html.write('<nav>\n<div class="nav nav-tabs" id="nav-tab" role="tablist">\n')
+            active = "active"
+            for project in config["projects"]:
+                name = escape(project["name"])
+                text = '<a class="nav-item nav-link {0}" id="nav-{1}-tab"' \
+                       ' data-toggle="tab" href="#nav-{1}" role="tab"' \
+                       ' aria-controls="nav-{1}" aria-selected="{2}">{1}</a>' \
+                    .format(active, name, active != "")
+                stat_html.write(text)
+                active = ""
+            text = '<a class="nav-item nav-link" id="nav-charts-tab"' \
+                   ' data-toggle="tab" href="#nav-charts" role="tab"' \
+                   ' aria-controls="nav-charts" aria-selected="false">Charts</a>'
+            stat_html.write(text)
+            stat_html.write('</div>\n</nav>\n')
+            stat_html.write('<div class="tab-content" id="nav-tabContent">\n')
 
     def finish(self):
         with open(self.html_path, 'a') as stat_html:
@@ -70,6 +118,7 @@ class HTMLPrinter(object):
             stat_html.write(footer)
 
     def extend_with_project(self, name, data):
+        first = len(self.projects) == 0
         self.projects[name] = data
         stat_html = open(self.html_path, 'a')
         keys = set()
@@ -79,7 +128,10 @@ class HTMLPrinter(object):
             for stat_name in val:
                 keys.add(stat_name)
 
-        stat_html.write("<h2>%s</h2>\n" % escape(name))
+        tab = '<div class="tab-pane fade {0}" ' \
+              'id="nav-{1}" role="tabpanel" aria-labelledby="nav-{1}-tab">\n'\
+            .format("show active" if first else "", escape(name))
+        stat_html.write(tab)
         stat_html.write('<table class="table table-bordered table-striped table-sm">\n')
         stat_html.write('<thead class="thead-dark">')
         stat_html.write("<tr>\n")
@@ -87,7 +139,7 @@ class HTMLPrinter(object):
         for conf in configurations:
             stat_html.write("<th>%s</th>" % escape(conf))
         stat_html.write("</tr>\n")
-        stat_html.write('</thread>\n')
+        stat_html.write('</thead>\n')
         stat_html.write('<tbody>\n')
 
         for stat_name in keys:
@@ -115,6 +167,7 @@ class HTMLPrinter(object):
                                 (escape(conf), escape(stat_name), escape(val)))
 
         self._generate_time_histogram(stat_html, configurations, data)
+        stat_html.write('</div>\n')
         stat_html.close()
 
     def _generate_time_histogram(self, stat_html, configurations, data):
@@ -137,9 +190,12 @@ class HTMLPrinter(object):
         stat_html.write(div)
 
     def _generate_charts(self, stat_html):
+        stat_html.write('<div class="tab-pane fade" id="nav-charts"'
+                        ' role="tabpanel" aria-labelledby="nav-charts-tab">\n')
         if not charts_supported:
+            stat_html.write("<p>Charts not supported."
+                            "Install Plotly python library.</p>\n</div>\n")
             return
-        stat_html.write("<h1>Charts</h1>\n")
         layout = go.Layout(barmode='group')
         for chart in self.charts:
             names = defaultdict(list)
@@ -166,3 +222,5 @@ class HTMLPrinter(object):
                           output_type='div', auto_open=False)
             stat_html.write("<h2>%s</h2>\n" % escape(chart))
             stat_html.write(div)
+
+        stat_html.write("</div>\n")
