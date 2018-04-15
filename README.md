@@ -17,7 +17,7 @@ that use a certain API or language construct extensively, based on
 Example usage:
 
 ```bash
-python gen_project_list.py 'pthread_mutex_t' 'C C++' 5 −−output pthread.json
+python generate_project_list.py 'pthread_mutex_t' 'C C++' 5 −−output pthread.json
 ```
 
 The above command will generate a list of 5 projects written in either C or C++
@@ -226,7 +226,7 @@ histograms for each project given.
 bug_stats.py --url http://example.org:8080/MyProduct --name my_run
 ```
 
-![Example bug statistics](https://raw.githubusercontent.com/Xazax-hun/csa-testbench/master/pictures/bug_stats.png)
+<p align="center"><img src="https://raw.githubusercontent.com/Xazax-hun/csa-testbench/master/pictures/bug_stats.png" width="70%" alt="Example bug statistics" /></p>
 
 This script also supports generating statistics from the difference of two runs,
 based on the bug reports presented by `CodeChecker cmd diff`:
