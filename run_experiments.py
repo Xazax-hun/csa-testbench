@@ -59,7 +59,8 @@ def run_command(cmd, print_error=True, cwd=None, env=None, shell=False):
 
 
 def count_lines(project, project_dir):
-    failed, stdout, _ = run_command('cloc %s --json --not-match-d="cc_results"' % project_dir)
+    failed, stdout, _ = run_command(
+        'cloc %s --json --not-match-d="cc_results"' % project_dir)
     if not failed:
         try:
             cloc_json_out = json.loads(stdout)
@@ -305,7 +306,7 @@ def check_project(project, project_dir, config, num_jobs):
         run_config["analyzer_version"] = version_string
         cmd = ("CodeChecker analyze '%s' -j%d -o %s -q " +
                "--analyzers clangsa --capture-analysis-output") \
-              % (json_path, num_jobs, result_path)
+            % (json_path, num_jobs, result_path)
         cmd += " --saargs " + filename
         cmd += collect_args("analyze_args", conf_sources)
         run_command(cmd, print_error=False, env=env)
@@ -344,30 +345,34 @@ def process_failures(path, top=5):
                     errors[match.group(1)] += 1
 
     return failures, sum(asserts.values()), asserts.most_common(top), \
-           sum(errors.values()), errors.most_common(top)
+        sum(errors.values()), errors.most_common(top)
 
 
 def post_process_project(project, project_dir, config, printer):
-    _, stdout, _ = run_command("CodeChecker cmd runs --url %s -o json" % config['CodeChecker']['url'])
+    _, stdout, _ = run_command(
+        "CodeChecker cmd runs --url %s -o json" % config['CodeChecker']['url'])
     runs = json.loads(stdout)
     project_stats = {}
     for run_config in project["configurations"]:
         cov_result_html = None
         if os.path.isdir(run_config["coverage_dir"]):
-            cov_result_path = os.path.join(run_config["result_path"], "coverage_merged")
+            cov_result_path = os.path.join(
+                run_config["result_path"], "coverage_merged")
             try:
                 run_command("MergeCoverage.py -i %s -o %s" %
                             (run_config["coverage_dir"], cov_result_path))
             except OSError as oerr:
                 print("[Warning] MergeCoverage.py is not found in path.")
-            cov_result_html = os.path.join(run_config["result_path"], "coverage.html")
+            cov_result_html = os.path.join(
+                run_config["result_path"], "coverage.html")
             try:
                 run_command("gcovr -k -g %s --html --html-details -r %s -o %s" %
                             (cov_result_path, project_dir, cov_result_html))
             except OSError as oerr:
                 print("[Warning] gcovr is not found in path.")
             cov_summary = summarize_gcov(cov_result_path)
-            cov_summary_path = os.path.join(run_config["result_path"], "coverage.txt")
+            cov_summary_path = os.path.join(
+                run_config["result_path"], "coverage.txt")
             with open(cov_summary_path, "w") as cov_file:
                 cov_file.write(json.dumps(cov_summary, indent=2))
 
@@ -380,7 +385,8 @@ def post_process_project(project, project_dir, config, printer):
         # Additional statistics.
         stats["Analyzer version"] = run_config["analyzer_version"]
         if cov_result_html:
-            stats["Detailed coverage link"] = create_link(cov_result_html, "coverage");
+            stats["Detailed coverage link"] = create_link(
+                cov_result_html, "coverage")
             stats["Coverage"] = cov_summary["overall"]["coverage"]
         for run in runs:
             if run_config['full_name'] in run:
