@@ -1,6 +1,7 @@
 from __future__ import print_function
 import argparse as ap
 from collections import Counter
+from datetime import datetime
 from distutils.dir_util import copy_tree
 import errno
 import json
@@ -31,21 +32,21 @@ def make_dir(dir):
             raise
 
 
-def load_config(filename):
-    """Load all information from the specified config file."""
+def timestamp():
+    return datetime.now().strftime("%H:%M:%S")
 
+
+def load_config(filename):
     config_path = os.path.join(TESTBENCH_ROOT, filename)
     with open(config_path, 'r') as config_file:
         config_dict = json.loads(config_file.read())
     if not config_dict:
-        sys.stderr.write("[Error] Empty config file.\n")
+        sys.stderr.write("[ERROR] Empty config file.\n")
         sys.exit(1)
     return config_dict
 
 
 def run_command(cmd, print_error=True, cwd=None, env=None, shell=False):
-    """Wrapper function to handle running system commands."""
-
     args = shlex.split(cmd) if not shell else cmd
     proc = sp.Popen(args, stdin=sp.PIPE, stdout=sp.PIPE,
                     stderr=sp.PIPE, cwd=cwd, env=env, shell=shell)
@@ -67,8 +68,8 @@ def count_lines(project, project_dir):
             project["LOC"] = cloc_json_out["SUM"]["code"]
         except:
             pass
-    print("[%s] LOC: %s." % (project['name'],
-                             project['LOC'] if 'LOC' in project else '?'))
+    print("%s [%s] LOC: %s." % (timestamp(), project['name'],
+                                project['LOC'] if 'LOC' in project else '?'))
 
 
 def clone_project(project, project_dir):
@@ -83,11 +84,10 @@ def clone_project(project, project_dir):
         count_lines(project, project_dir)
         return True
 
-    # If the project folder already exists, remove it.
     if os.path.isdir(project_dir):
         shutil.rmtree(project_dir)
 
-    print("[%s] Checking out project... " % project['name'])
+    print("%s [%s] Checking out project... " % (timestamp(), project['name']))
 
     # Check if tarball is provided.
     # TODO: support zip files.
@@ -111,7 +111,6 @@ def clone_project(project, project_dir):
     if 'tag' not in project:
         project['tag'] = 'master'
 
-    # Check whether the project config contains a version tag or a commit hash.
     try:
         int(project['tag'], base=16)
         commit_hash = True
@@ -158,8 +157,6 @@ def identify_build_system(project_dir, configure):
 
     FIXME: If no build system found, should we apply the same
            heuristics for src subfolder if exists?
-
-    The actual build-log generation happens in main().
     """
 
     project_files = os.listdir(project_dir)
@@ -198,8 +195,7 @@ def identify_build_system(project_dir, configure):
 
 
 def check_logged(projects_root, projects):
-    """ Count successfully checked projects.
-        Additional cleanups might be done here. """
+    """ Count successfully checked projects."""
 
     configured_projects = set([project["name"] for project in projects])
     projects = os.listdir(projects_root)
@@ -214,7 +210,6 @@ def check_logged(projects_root, projects):
 
 
 def log_project(project, project_dir, num_jobs):
-    # The following runs the 'configure' script if needed.
     if 'prepared' in project:
         return True
     configure = True
@@ -227,7 +222,8 @@ def log_project(project, project_dir, num_jobs):
     else:
         build_sys = identify_build_system(project_dir, configure)
     failed = not build_sys
-    print("[%s] Generating build log... " % project['name'])
+
+    print("%s [%s] Generating build log... " % (timestamp(), project['name']))
     json_path = os.path.join(project_dir, "compile_commands.json")
     binary_dir = project_dir
     if "binary_dir" in project:
@@ -297,7 +293,8 @@ def check_project(project, project_dir, config, num_jobs):
         if run_config["name"] != "":
             name += "_" + run_config["name"]
         run_config["full_name"] = name
-        print("[%s] Analyzing project... " % name)
+
+        print("%s [%s] Analyzing project... " % (timestamp(), name))
         sys.stdout.flush()
         env = None
         if "clang_path" in run_config:
@@ -310,13 +307,13 @@ def check_project(project, project_dir, config, num_jobs):
         cmd += " --saargs " + filename
         cmd += collect_args("analyze_args", conf_sources)
         run_command(cmd, print_error=False, env=env)
-        print("[%s] Done. Storing results..." % name)
 
+        print("%s [%s] Done. Storing results..." % (timestamp(), name))
         cmd = "CodeChecker store %s --url '%s' -n %s --tag %s" \
               % (result_path, config["CodeChecker"]["url"], name, tag)
         cmd += collect_args("store_args", conf_sources)
-        run_command(cmd, print_error=False, env=env)
-        print("[%s] Results stored." % name)
+        failed, _, _ = run_command(cmd, print_error=False, env=env)
+        print("%s [%s] Results stored." % (timestamp(), name))
 
 
 def create_link(url, text):
@@ -418,7 +415,7 @@ def post_process_project(project, project_dir, config, printer):
         project_stats[run_config["name"]] = stats
 
     printer.extend_with_project(project["name"], project_stats)
-    print("[%s] Post processed." % project['name'])
+    print("%s [%s] Postprocessed." % (timestamp(), project['name']))
 
 
 def main():
@@ -442,7 +439,7 @@ def main():
 
     if args.jobs < 1:
         sys.stderr.write(
-            "[ERROR] The number of jobs must be a positive integer.\n")
+            "[ERROR] Invalid number of jobs.\n")
 
     config_path = args.config
     print("Using configuration file '%s'." % config_path)
@@ -471,7 +468,7 @@ def main():
     printer.finish()
 
     logged_projects = check_logged(projects_root, config['projects'])
-    print("Number of analyzed projects: %d / %d"
+    print("\nNumber of analyzed projects: %d / %d"
           % (logged_projects, len(config['projects'])))
     print("Results can be viewed at '%s'." % config['CodeChecker']['url'])
 
