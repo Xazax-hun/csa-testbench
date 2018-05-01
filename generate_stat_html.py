@@ -1,5 +1,6 @@
 from collections import defaultdict
 from cgi import escape
+from datetime import timedelta
 import json
 
 try:
@@ -203,7 +204,8 @@ class HTMLPrinter(object):
             for project, data in self.projects.iteritems():
                 for configuration, stats in data.iteritems():
                     if chart in stats:
-                        values[configuration].append(float(stats[chart]))
+                        values[configuration].append(
+                            self._get_chart_value(stats[chart]))
                     else:
                         values[configuration].append(0)
                     names[configuration].append(project)
@@ -224,3 +226,8 @@ class HTMLPrinter(object):
             stat_html.write(div)
 
         stat_html.write("</div>\n")
+
+    def _get_chart_value(self, value):
+        if isinstance(value, timedelta):
+            return value.seconds
+        return float(value)

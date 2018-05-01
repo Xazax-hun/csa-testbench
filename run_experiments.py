@@ -392,7 +392,7 @@ def post_process_project(project, project_dir, config, printer):
                 run = run[run_config['full_name']]
                 break
         stats["Result count"] = run["resultCount"]
-        stats["Duration"] = str(timedelta(seconds=run["duration"]))
+        stats["Duration"] = timedelta(seconds=run["duration"])
         stats["CodeChecker link"] = create_link("%s/#run=%s&tab=%s" %
                                                 (config['CodeChecker']['url'], run_config['full_name'],
                                                  run_config['full_name']),
