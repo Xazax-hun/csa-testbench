@@ -309,8 +309,10 @@ def check_project(project, project_dir, config, num_jobs):
         run_command(cmd, print_error=False, env=env)
 
         print("%s [%s] Done. Storing results..." % (timestamp(), name))
-        cmd = "CodeChecker store %s --url '%s' -n %s --tag %s" \
-              % (result_path, config["CodeChecker"]["url"], name, tag)
+        cmd = "CodeChecker store %s --url '%s' -n %s " \
+              % (result_path, config["CodeChecker"]["url"], name)
+        if tag != "":
+            cmd += " --tag %s " % tag
         cmd += collect_args("store_args", conf_sources)
         failed, _, _ = run_command(cmd, print_error=False, env=env)
         print("%s [%s] Results stored." % (timestamp(), name))
