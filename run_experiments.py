@@ -1,7 +1,7 @@
 from __future__ import print_function
 import argparse as ap
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timedelta
 from distutils.dir_util import copy_tree
 import errno
 import json
@@ -390,7 +390,7 @@ def post_process_project(project, project_dir, config, printer):
                 run = run[run_config['full_name']]
                 break
         stats["Result count"] = run["resultCount"]
-        stats["Duration"] = run["duration"]
+        stats["Duration"] = str(timedelta(seconds=run["duration"]))
         stats["CodeChecker link"] = create_link("%s/#run=%s&tab=%s" %
                                                 (config['CodeChecker']['url'], run_config['full_name'],
                                                  run_config['full_name']),
