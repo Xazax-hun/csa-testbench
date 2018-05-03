@@ -150,9 +150,7 @@ class HTMLPrinter(object):
             stat_html.write("<tr>\n")
             stat_html.write("<td>%s</td>" % escape(stat_name))
             for conf in configurations:
-                val = "-"
-                if stat_name in data[conf]:
-                    val = str(data[conf][stat_name])
+                val = str(data[conf].get(stat_name, '-'))
                 stat_html.write("<td>%s</td>" % val)
             stat_html.write("</tr>\n")
         stat_html.write('</tbody>\n')
@@ -161,9 +159,7 @@ class HTMLPrinter(object):
         # Output some values as comments.
         for stat_name in self.as_comment:
             for conf in configurations:
-                val = "-"
-                if stat_name in data[conf]:
-                    val = str(data[conf][stat_name])
+                val = str(data[conf].get(stat_name, '-'))
                 stat_html.write("<!-- %s[%s]=%s -->\n" %
                                 (escape(conf), escape(stat_name), escape(val)))
 
@@ -177,11 +173,11 @@ class HTMLPrinter(object):
         traces = []
         for conf in configurations:
             if "TU times" in data[conf]:
-                if len(data[conf]["TU times"]) == 0:
+                if not data[conf]["TU times"]:
                     continue
                 traces.append(go.Histogram(x=data[conf]["TU times"],
                                            name=conf))
-        if len(traces) == 0:
+        if not traces:
             return
         layout = go.Layout(barmode='overlay')
         fig = go.Figure(data=traces, layout=layout)
@@ -203,11 +199,8 @@ class HTMLPrinter(object):
             values = defaultdict(list)
             for project, data in self.projects.iteritems():
                 for configuration, stats in data.iteritems():
-                    if chart in stats:
-                        values[configuration].append(
-                            self._get_chart_value(stats[chart]))
-                    else:
-                        values[configuration].append(0)
+                    values[configuration].append(
+                        self._get_chart_value(stats.get(chart, 0)))
                     names[configuration].append(project)
 
             # Skip empty charts.

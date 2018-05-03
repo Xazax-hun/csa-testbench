@@ -53,8 +53,8 @@ def run_command(cmd, print_error=True, cwd=None, env=None, shell=False):
     stdout, stderr = proc.communicate()
     # CC usually does not return with 0, but printing empty
     # error messages in that case is needless.
-    if proc.returncode is not 0 and print_error:
-        output = stderr if len(stderr) != 0 else stdout
+    if proc.returncode != 0 and print_error:
+        output = stderr if stderr else stdout
         sys.stderr.write("[ERROR] %s\n" % str(output))
     return proc.returncode, stdout, stderr
 
@@ -69,7 +69,7 @@ def count_lines(project, project_dir):
         except:
             pass
     print("%s [%s] LOC: %s." % (timestamp(), project['name'],
-                                project['LOC'] if 'LOC' in project else '?'))
+                                project.get('LOC', '?')))
 
 
 def clone_project(project, project_dir):
@@ -120,8 +120,7 @@ def clone_project(project, project_dir):
     # If the 'tag' value is a version tag, we can use shallow cloning.
     # With a commit hash, we need to clone everything and then checkout
     # the specified commit.
-    cmd = {
-        'clone': 'git clone %s %s' % (project['url'], project_dir)}
+    cmd = {'clone': 'git clone %s %s' % (project['url'], project_dir)}
 
     if commit_hash:
         cmd['checkout'] = 'git -C %s checkout %s' % (
@@ -268,13 +267,11 @@ def check_project(project, project_dir, config, num_jobs):
         binary_dir = os.path.join(binary_dir, project["binary_dir"])
     json_path = os.path.join(binary_dir, "compile_commands.json")
     if "configurations" not in project:
-        if "configurations" in config:
-            project["configurations"] = config["configurations"]
-        else:
-            project["configurations"] = [{"name": ""}]
+        project["configurations"] = config.get("configurations",
+                                               [{"name": ""}])
     for run_config in project["configurations"]:
         result_dir = "cc_results"
-        if run_config["name"] != "":
+        if run_config["name"]:
             result_dir += "_" + run_config["name"]
         result_path = os.path.join(project_dir, result_dir)
         coverage_dir = os.path.join(result_path, "coverage")
@@ -286,11 +283,11 @@ def check_project(project, project_dir, config, num_jobs):
         conf_sources = [config["CodeChecker"], project, run_config]
         os.write(args_file, collect_args("clang_sa_args", conf_sources))
         os.close(args_file)
-        tag = project["tag"] if "tag" in project else ""
+        tag = project.get("tag")
         name = project["name"]
-        if tag != "":
+        if tag:
             name += "_" + tag
-        if run_config["name"] != "":
+        if run_config["name"]:
             name += "_" + run_config["name"]
         run_config["full_name"] = name
 
@@ -304,14 +301,14 @@ def check_project(project, project_dir, config, num_jobs):
         cmd = ("CodeChecker analyze '%s' -j%d -o %s -q " +
                "--analyzers clangsa --capture-analysis-output") \
             % (json_path, num_jobs, result_path)
-        cmd += " --saargs " + filename
+        cmd += " --saargs %s " % filename
         cmd += collect_args("analyze_args", conf_sources)
         run_command(cmd, print_error=False, env=env)
 
         print("%s [%s] Done. Storing results..." % (timestamp(), name))
         cmd = "CodeChecker store %s --url '%s' -n %s " \
               % (result_path, config["CodeChecker"]["url"], name)
-        if tag != "":
+        if tag:
             cmd += " --tag %s " % tag
         cmd += collect_args("store_args", conf_sources)
         failed, _, _ = run_command(cmd, print_error=False, env=env)
@@ -411,8 +408,7 @@ def post_process_project(project, project_dir, config, printer):
         if error_toplist:
             error_toplist = map(lambda x: "%s [%d]" % x, error_toplist)
             stats["Top errors"] = "<br>\n".join(error_toplist)
-        if "LOC" in project:
-            stats["Lines of code"] = project["LOC"]
+        stats["Lines of code"] = project.get("LOC", '?')
 
         project_stats[run_config["name"]] = stats
 
