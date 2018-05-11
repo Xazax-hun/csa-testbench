@@ -298,9 +298,10 @@ def check_project(project, project_dir, config, num_jobs):
             env = update_path(run_config["clang_path"])
         _, version_string, _ = run_command("clang --version", env=env)
         run_config["analyzer_version"] = version_string
+        analyzers = config["CodeChecker"].get("analyzers", "clangsa")
         cmd = ("CodeChecker analyze '%s' -j%d -o %s -q " +
-               "--analyzers clangsa --capture-analysis-output") \
-            % (json_path, num_jobs, result_path)
+               "--analyzers %s --capture-analysis-output") \
+            % (json_path, num_jobs, result_path, analyzers)
         cmd += " --saargs %s " % filename
         cmd += collect_args("analyze_args", conf_sources)
         run_command(cmd, print_error=False, env=env)
@@ -311,7 +312,7 @@ def check_project(project, project_dir, config, num_jobs):
         if tag:
             cmd += " --tag %s " % tag
         cmd += collect_args("store_args", conf_sources)
-        failed, _, _ = run_command(cmd, print_error=False, env=env)
+        run_command(cmd, print_error=False, env=env)
         print("%s [%s] Results stored." % (timestamp(), name))
 
 

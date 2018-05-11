@@ -167,7 +167,8 @@ configuration values are optional.
   "CodeChecker": {
     "url": "http://localhost:8001/Default",
     "analyze_args": "",
-    "store_args": ""
+    "store_args": "",
+    "analyzers": "clangsa clang-tidy"
   }
 }
 ```
@@ -184,6 +185,7 @@ configuration should have at least a name.
 arguments. Entries under the projects apply to each configuration.
 * **analyze_args**: Arguments passed to the `CodeChecker analyze` command. Works
 the same way as `clang_sa_args`.
+* **analyzers**: Which analyzers to run. Defaults to Clang Static Analyzer only.
 * **store_args**: Arguments passed to the `CodeChecker store` command. Works the
 same way as `clang_sa_args`.
 * **clang_path**: The directory containing the `clang` binaries. This can be
