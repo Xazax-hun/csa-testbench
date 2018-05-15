@@ -68,6 +68,10 @@
       "name": "protobuf",
       "url": "https://github.com/google/protobuf.git",
       "configure_command": "sh autogen.sh && ./configure --disable-static"
+    },
+    {
+      "name": "Xerces",
+      "url": "https://github.com/apache/xerces-c.git"
     }
   ],
   "configurations": [
