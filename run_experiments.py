@@ -24,9 +24,9 @@ from generate_stat_html import HTMLPrinter
 TESTBENCH_ROOT = os.getcwd()
 
 
-def make_dir(dir):
+def make_dir(path):
     try:
-        os.makedirs(dir)
+        os.makedirs(path)
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
@@ -331,8 +331,8 @@ def process_failures(path, top=5):
             continue
         failures += 1
         full_path = os.path.join(path, name)
-        with zipfile.ZipFile(full_path) as zip, \
-                zip.open("stderr") as stderr:
+        with zipfile.ZipFile(full_path) as archive, \
+                archive.open("stderr") as stderr:
             for line in stderr:
                 match = assert_pattern.search(line)
                 if match:
@@ -358,14 +358,14 @@ def post_process_project(project, project_dir, config, printer):
             try:
                 run_command("MergeCoverage.py -i %s -o %s" %
                             (run_config["coverage_dir"], cov_result_path))
-            except OSError as oerr:
+            except OSError:
                 print("[Warning] MergeCoverage.py is not found in path.")
             cov_result_html = os.path.join(
                 run_config["result_path"], "coverage.html")
             try:
                 run_command("gcovr -k -g %s --html --html-details -r %s -o %s" %
                             (cov_result_path, project_dir, cov_result_html))
-            except OSError as oerr:
+            except OSError:
                 print("[Warning] gcovr is not found in path.")
             cov_summary = summarize_gcov(cov_result_path)
             cov_summary_path = os.path.join(
@@ -431,7 +431,7 @@ def main():
 
     try:
         run_command("CodeChecker version")
-    except OSError as oerr:
+    except OSError:
         sys.stderr.write(
             "[ERROR] CodeChecker is not available as a command.\n")
         sys.exit(1)

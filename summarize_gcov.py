@@ -11,10 +11,10 @@ def summarize_gcov(path):
     overall_covered = 0
     overall_max = 0
     for root, _, files in os.walk(path):
-        for f in files:
-            if not f.endswith(".gcov"):
+        for gcov_file in files:
+            if not gcov_file.endswith(".gcov"):
                 continue
-            file_path = os.path.join(root, f)
+            file_path = os.path.join(root, gcov_file)
             file_max = 0
             file_sum = 0
             file_covered = 0

@@ -74,7 +74,8 @@ footer = """
 </div>
 <footer>
   <div class="container-fluid bg-light p-3 mb-2">
-    <span class="text-muted">This report is created by the <a href="https://github.com/Xazax-hun/csa-testbench">CSA-Testbench</a> toolset.</span>
+    <span class="text-muted">This report is created by the
+      <a href="https://github.com/Xazax-hun/csa-testbench">CSA-Testbench</a> toolset.</span>
   </div>
 </footer>
 </body>
@@ -163,11 +164,12 @@ class HTMLPrinter(object):
                 stat_html.write("<!-- %s[%s]=%s -->\n" %
                                 (escape(conf), escape(stat_name), escape(val)))
 
-        self._generate_time_histogram(stat_html, configurations, data)
+        HTMLPrinter._generate_time_histogram(stat_html, configurations, data)
         stat_html.write('</div>\n')
         stat_html.close()
 
-    def _generate_time_histogram(self, stat_html, configurations, data):
+    @staticmethod
+    def _generate_time_histogram(stat_html, configurations, data):
         if not charts_supported:
             return
         traces = []
@@ -200,7 +202,7 @@ class HTMLPrinter(object):
             for project, data in self.projects.iteritems():
                 for configuration, stats in data.iteritems():
                     values[configuration].append(
-                        self._get_chart_value(stats.get(chart, 0)))
+                        HTMLPrinter._get_chart_value(stats.get(chart, 0)))
                     names[configuration].append(project)
 
             # Skip empty charts.
@@ -220,7 +222,8 @@ class HTMLPrinter(object):
 
         stat_html.write("</div>\n")
 
-    def _get_chart_value(self, value):
+    @staticmethod
+    def _get_chart_value(value):
         if isinstance(value, timedelta):
             return value.seconds
         return float(value)

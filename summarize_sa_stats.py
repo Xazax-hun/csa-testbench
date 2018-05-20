@@ -48,18 +48,16 @@ class StatType(Enum):
     MAX = 'maximum'
 
 
-def summ_stats(dir, verbose=True):
+def summ_stats(path, verbose=True):
     stat_map = defaultdict(int)
     per_helper = defaultdict(int)
     group = {}
-    if os.path.isdir(dir):
-        for file in os.listdir(dir):
-            summ_stats_on_file(os.path.join(dir, file), stat_map, per_helper, group)
-    elif os.path.isfile(dir):
-        summ_stats_on_file(dir, stat_map, per_helper, group)
+    if os.path.isdir(path):
+        for stat_file in os.listdir(path):
+            summ_stats_on_file(os.path.join(path, stat_file), stat_map, per_helper, group)
+    elif os.path.isfile(path):
+        summ_stats_on_file(path, stat_map, per_helper, group)
     else:
-        return stat_map
-    if len(stat_map) == 0:
         return stat_map
 
     if verbose:

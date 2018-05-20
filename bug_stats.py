@@ -222,7 +222,7 @@ existing_runs = [p.keys()[0] for p in valid_projects_on_server]
 if not args.diff:
     # If we are not doing a diff, project results must be queried verbatim.
 
-    def get_results(projects=[]):
+    def get_results(projects):
         """Gets the results for the given list of projects naively from
         CodeChecker."""
 
@@ -244,7 +244,7 @@ if not args.diff:
 
         return project_results
 elif args.diff:
-    def get_results(projects=None):
+    def get_results(projects):
         if not projects or len(projects) != 3:
             print("ERROR! In diff mode, exactly THREE args must be "
                   "specified in [base, new, mode] order.")
@@ -318,11 +318,11 @@ else:
 
 ##############################################################################
 
-def calculate_metrics(bugPathLengths):
-    bugPathLengths.sort()
+def calculate_metrics(bug_path_lengths):
+    bug_path_lengths.sort()
 
-    num_lengths = float(len(bugPathLengths))
-    sum_lengths = float(sum(bugPathLengths))
+    num_lengths = float(len(bug_path_lengths))
+    sum_lengths = float(sum(bug_path_lengths))
     mean = sum_lengths / num_lengths
 
     percentiles_needed = [25, 50, 75, 90]
@@ -339,21 +339,21 @@ def calculate_metrics(bugPathLengths):
 
         # the percentile is the indexth element (if idx was rounded...)
         idx = int(idx)  # it is an index!
-        percentile = float(bugPathLengths[idx])
+        percentile = float(bug_path_lengths[idx])
 
         if not middle_avg:
             # if idx WAS a whole number, the percentile is the average
             # of the indexth element and the element after it
-            percentile = float(bugPathLengths[idx] +
-                               bugPathLengths[idx + 1]) / 2
+            percentile = float(bug_path_lengths[idx] +
+                               bug_path_lengths[idx + 1]) / 2
 
         percentile_values.append((int(perc * 100), percentile))
 
     print("\n------------------- Metrics ------------------")
     print('Total # of bugs:             ' + str(int(num_lengths)))
-    print('MIN BugPath length:          ' + str(bugPathLengths[0]))
+    print('MIN BugPath length:          ' + str(bug_path_lengths[0]))
     print('MAX BugPath length:          ' +
-          str(bugPathLengths[len(bugPathLengths) - 1]))
+          str(bug_path_lengths[len(bug_path_lengths) - 1]))
     print('Mean length:                 ' + str(mean))
 
     print("")
