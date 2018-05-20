@@ -470,6 +470,7 @@ def main():
     print("\nNumber of analyzed projects: %d / %d"
           % (logged_projects, len(config['projects'])))
     print("Results can be viewed at '%s'." % config['CodeChecker']['url'])
+    print("Stats can be viewed at '%s'." % stats_html)
 
 
 if __name__ == '__main__':
