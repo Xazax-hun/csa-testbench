@@ -125,7 +125,7 @@ class HTMLPrinter(object):
         stat_html = open(self.html_path, 'a')
         keys = set()
         configurations = set()
-        for configuration, val in data.iteritems():
+        for configuration, val in data.items():
             configurations.add(configuration)
             for stat_name in val:
                 keys.add(stat_name)
@@ -199,8 +199,8 @@ class HTMLPrinter(object):
         for chart in self.charts:
             names = defaultdict(list)
             values = defaultdict(list)
-            for project, data in self.projects.iteritems():
-                for configuration, stats in data.iteritems():
+            for project, data in self.projects.items():
+                for configuration, stats in data.items():
                     values[configuration].append(
                         HTMLPrinter._get_chart_value(stats.get(chart, 0)))
                     names[configuration].append(project)
