@@ -14,6 +14,10 @@
       "url": "https://github.com/FFmpeg/FFmpeg.git"
     },
     {
+      "name": "git",
+      "url": "https://github.com/git/git.git"
+    },
+    {
       "name": "libWebM",
       "url": "https://github.com/webmproject/libwebm.git"
     },
@@ -64,6 +68,10 @@
     {
       "name": "TMUX",
       "url": "https://github.com/tmux/tmux.git"
+    },
+    {
+      "name": "twin",
+      "url": "https://github.com/cosmos72/twin.git"
     },
     {
       "name": "Vim",
