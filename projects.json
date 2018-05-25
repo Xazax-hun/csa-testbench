@@ -1,6 +1,11 @@
 {
   "projects": [
     {
+      "name": "Bitcoin",
+      "url": "https://github.com/bitcoin/bitcoin.git",
+      "configure_command": "./autogen.sh && ./configure --disable-wallet --disable-static --disable-tests"
+    },
+    {
       "name": "Curl",
       "url": "https://github.com/curl/curl.git"
     },
@@ -9,8 +14,25 @@
       "url": "https://github.com/FFmpeg/FFmpeg.git"
     },
     {
+      "name": "libWebM",
+      "url": "https://github.com/webmproject/libwebm.git"
+    },
+    {
+      "name": "libpng",
+      "url": "https://github.com/glennrp/libpng.git"
+    },
+    {
+      "name": "LLVM",
+      "url": "https://github.com/llvm-mirror/llvm.git",
+      "binary_dir": "build"
+    },
+    {
       "name": "Memchached",
       "url": "https://github.com/memcached/memcached.git"
+    },
+    {
+      "name": "Neovim",
+      "url": "https://github.com/neovim/neovim.git"
     },
     {
       "name": "OpenSSL",
@@ -23,8 +45,17 @@
       "configure_command": "./configure --disable-yasm"
     },
     {
+      "name": "protobuf",
+      "url": "https://github.com/google/protobuf.git",
+      "configure_command": "sh autogen.sh && ./configure --disable-static"
+    },
+    {
       "name": "Redis",
       "url": "https://github.com/antirez/redis.git"
+    },
+    {
+      "name": "SQLite",
+      "url": "https://www.sqlite.org/2018/sqlite-autoconf-3230000.tar.gz"
     },
     {
       "name": "TinyXML2",
@@ -37,37 +68,6 @@
     {
       "name": "Vim",
       "url": "https://github.com/vim/vim.git"
-    },
-    {
-      "name": "Neovim",
-      "url": "https://github.com/neovim/neovim.git"
-    },
-    {
-      "name": "Bitcoin",
-      "url": "https://github.com/bitcoin/bitcoin.git",
-      "configure_command": "./autogen.sh && ./configure --disable-wallet --disable-static --disable-tests"
-    },
-    {
-      "name": "LLVM",
-      "url": "https://github.com/llvm-mirror/llvm.git",
-      "binary_dir": "build"
-    },
-    {
-      "name": "libWebM",
-      "url": "https://github.com/webmproject/libwebm.git"
-    },
-    {
-      "name": "libpng",
-      "url": "https://github.com/glennrp/libpng.git"
-    },
-    {
-      "name": "SQLite",
-      "url": "https://www.sqlite.org/2018/sqlite-autoconf-3230000.tar.gz"
-    },
-    {
-      "name": "protobuf",
-      "url": "https://github.com/google/protobuf.git",
-      "configure_command": "sh autogen.sh && ./configure --disable-static"
     },
     {
       "name": "Xerces",
