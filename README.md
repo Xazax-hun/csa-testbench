@@ -148,6 +148,11 @@ configuration values are optional.
       "name": "xerces-c",
       "url": "https://github.com/apache/xerces-c.git",
       "prepared": true
+    },
+    {
+      "name": "icu",
+      "url": "http://download.icu-project.org/files/icu4c/61.1/icu4c-61_1-src.tgz",
+      "source_dir": "source"
     }
   ],
   "configurations": [
@@ -202,6 +207,8 @@ value. The working directory will be the root of the project.
 * **binary_dir**: The binary dir can be specified for out-of-tree builds. It can
 be relative to the project root. Currently, this is only supported for `cmake`
 projects.
+* **source_dir**: If the source code and the related build files of the project
+are not in the project root, this directory can specify the location.
 * **prepared**: If this configuration value is specified, the script will not
 attempt to check out the project and will not attempt to create a build log.
 It will assume that a folder with the name of the project exists and contains a

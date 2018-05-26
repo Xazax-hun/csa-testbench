@@ -459,10 +459,11 @@ def main():
         if not clone_project(project, project_dir):
             shutil.rmtree(project_dir)
             continue
-        if not log_project(project, project_dir, args.jobs):
+        source_dir = os.path.join(project_dir, project.get("source_dir", ""))
+        if not log_project(project, source_dir, args.jobs):
             continue
-        check_project(project, project_dir, config, args.jobs)
-        post_process_project(project, project_dir, config, printer)
+        check_project(project, source_dir, config, args.jobs)
+        post_process_project(project, source_dir, config, printer)
 
     printer.finish()
 
