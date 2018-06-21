@@ -2,6 +2,7 @@ from git import Repo
 import sys
 import json
 import math
+import os
 from collections import defaultdict
 
 
@@ -9,7 +10,7 @@ from collections import defaultdict
 # https://static.googleusercontent.com/media/research.google.com/hu//pubs/archive/41145.pdf
 
 
-def main(path):
+def main(path, since=None, until=None):
     words = ["fix", "resolve", "close"]
     repo = Repo(path)
     # Rahman algorithm, rank files based on closed bugs from most bug prone
@@ -26,7 +27,12 @@ def main(path):
     # fix_cache = {}
     min_time = repo.head.commit.committed_date
     max_time = 0
-    for commit in repo.iter_commits():
+    kwargs = {}
+    if since:
+        kwargs["since"] = since
+    if until:
+        kwargs["until"] = until
+    for commit in repo.iter_commits(**kwargs):
         if all([w not in commit.message.lower() for w in words]):
             continue
         commit_time = commit.committed_date
@@ -47,12 +53,15 @@ def main(path):
             time_norm = (time - min_time) / time_range
             score += 1 / (1 + math.exp(-12 * time_norm + shift))
         time_weighted_risk[source_file] = score
-    with open('rahman.txt', 'w') as outfile:
+    prefix = os.path.basename(path) + "_"
+    with open(prefix + 'rahman.txt', 'w') as outfile:
         json.dump(rahman, outfile, indent=2)
-    with open('time_weighted_risk.txt', 'w') as outfile:
+    with open(prefix + 'time_weighted_risk.txt', 'w') as outfile:
         json.dump(time_weighted_risk, outfile, indent=2)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    arg_num = len(sys.argv)
+    main(sys.argv[1], sys.argv[2] if 2 < arg_num else None,
+         sys.argv[3] if 3 < arg_num else None)
 
