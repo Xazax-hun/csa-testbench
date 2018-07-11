@@ -7,6 +7,7 @@ import errno
 import json
 import multiprocessing
 import os
+import pprint
 import re
 import shlex
 import shutil
@@ -259,7 +260,7 @@ def update_path(path, env=None):
     return env
 
 
-def check_project(project, project_dir, config, num_jobs):
+def check_project(project, project_dir, config, num_jobs, store):
     """Analyze project and store the results with CodeChecker."""
 
     binary_dir = project_dir
@@ -306,14 +307,15 @@ def check_project(project, project_dir, config, num_jobs):
         cmd += collect_args("analyze_args", conf_sources)
         run_command(cmd, print_error=False, env=env)
 
-        print("%s [%s] Done. Storing results..." % (timestamp(), name))
-        cmd = "CodeChecker store %s --url '%s' -n %s " \
-              % (result_path, config["CodeChecker"]["url"], name)
-        if tag:
-            cmd += " --tag %s " % tag
-        cmd += collect_args("store_args", conf_sources)
-        run_command(cmd, print_error=False, env=env)
-        print("%s [%s] Results stored." % (timestamp(), name))
+        if store:
+	    print("%s [%s] Done. Storing results..." % (timestamp(), name))
+	    cmd = "CodeChecker store %s --url '%s' -n %s " \
+		  % (result_path, config["CodeChecker"]["url"], name)
+	    if tag:
+		cmd += " --tag %s " % tag
+	    cmd += collect_args("store_args", conf_sources)
+	    run_command(cmd, print_error=False, env=env)
+	    print("%s [%s] Results stored." % (timestamp(), name))
 
 
 def create_link(url, text):
@@ -345,7 +347,7 @@ def process_failures(path, top=5):
         sum(errors.values()), errors.most_common(top)
 
 
-def post_process_project(project, project_dir, config, printer):
+def post_process_project(project, project_dir, config, printer, fail_on_assert, no_store):
     _, stdout, _ = run_command(
         "CodeChecker cmd runs --url %s -o json" % config['CodeChecker']['url'])
     runs = json.loads(stdout)
@@ -406,10 +408,21 @@ def post_process_project(project, project_dir, config, printer):
         if assert_toplist:
             assert_toplist = map(lambda x: "%s [%d]" % x, assert_toplist)
             stats["Top asserts"] = "<br>\n".join(assert_toplist)
+            top_asserts_str = "\n".join(assert_toplist)
         if error_toplist:
             error_toplist = map(lambda x: "%s [%d]" % x, error_toplist)
             stats["Top errors"] = "<br>\n".join(error_toplist)
+            top_errors_str = "\n".join(error_toplist)
         stats["Lines of code"] = project.get("LOC", '?')
+
+	print("Number of assertions: " + str(asserts))
+        if fail_on_assert and asserts > 0:
+            print(str(stats))
+	    if assert_toplist:
+		print("Top asserts:\n" + top_asserts_str)
+	    if error_toplist:
+		print("Top errors:\n" + top_errors_str)
+	    exit(13)
 
         project_stats[run_config["name"]] = stats
 
@@ -427,6 +440,14 @@ def main():
     parser.add_argument("-j", "--jobs", metavar="JOBS", type=int,
                         default=multiprocessing.cpu_count(),
                         help="number of jobs")
+    parser.add_argument("--fail_on_assert", dest='fail_on_assert',
+                        action='store_true',
+                        help="Return with non-zero error-code " +
+                             "when Clang asserts")
+    parser.add_argument("--no_store", dest='no_store',
+                        action='store_true',
+                        help="Do not store results to" +
+                             "CodeChecker server")
     args = parser.parse_args()
 
     try:
@@ -439,6 +460,9 @@ def main():
     if args.jobs < 1:
         sys.stderr.write(
             "[ERROR] Invalid number of jobs.\n")
+
+    fail_on_assert = args.fail_on_assert
+    no_store = args.no_store
 
     config_path = args.config
     print("Using configuration file '%s'." % config_path)
@@ -462,8 +486,9 @@ def main():
         source_dir = os.path.join(project_dir, project.get("source_dir", ""))
         if not log_project(project, source_dir, args.jobs):
             continue
-        check_project(project, source_dir, config, args.jobs)
-        post_process_project(project, source_dir, config, printer)
+        check_project(project, source_dir, config, args.jobs, not no_store)
+        post_process_project(project, source_dir, config, printer,
+                             fail_on_assert, no_store)
 
     printer.finish()
 
