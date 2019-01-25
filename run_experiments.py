@@ -430,7 +430,7 @@ def main():
     args = parser.parse_args()
 
     try:
-        run_command("CodeChecker version")
+        _, out, _ = run_command("CodeChecker version")
     except OSError:
         sys.stderr.write(
             "[ERROR] CodeChecker is not available as a command.\n")
@@ -444,6 +444,7 @@ def main():
     print("Using configuration file '%s'." % config_path)
     config = load_config(config_path)
     script_dir = os.path.dirname(os.path.realpath(__file__))
+    config["CodeChecker version"] = out
     _, out, _ = run_command("git rev-parse HEAD", False, cwd=script_dir)
     config["Script version"] = out
     print("Number of projects to process: %d.\n" % len(config['projects']))
