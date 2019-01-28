@@ -272,19 +272,11 @@ This section is a small example how to do it for the Clang Static Analyzer.
   
   ```bash
   # reduce.sh
+  set -e
   /path/to/basline/clang --analyze preprocessed.c 2> out1.txt
-  if [[ $? -ne 0 ]]; then
-    exit 1
-  fi
-  
   /path/to/modified/clang --analyze preprocessed.c 2> out2.txt
-  if [[ $? -ne 0 ]]; then
-    exit 1
-  fi
   
   ! cmp --silent out1.txt out2.txt
-
-  exit $?
   ```
   
 3. Execute creduce and wait for the results
