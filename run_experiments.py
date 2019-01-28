@@ -61,7 +61,7 @@ def run_command(cmd, print_error=True, cwd=None, env=None, shell=False):
 
 def count_lines(project, project_dir):
     failed, stdout, _ = run_command(
-        'cloc %s --json --not-match-d="cc_results"' % project_dir)
+        'cloc "%s" --json --not-match-d="cc_results"' % project_dir)
     if not failed:
         try:
             cloc_json_out = json.loads(stdout)
@@ -120,10 +120,10 @@ def clone_project(project, project_dir):
     # If the 'tag' value is a version tag, we can use shallow cloning.
     # With a commit hash, we need to clone everything and then checkout
     # the specified commit.
-    cmd = {'clone': 'git clone %s %s' % (project['url'], project_dir)}
+    cmd = {'clone': 'git clone %s "%s"' % (project['url'], project_dir)}
 
     if commit_hash:
-        cmd['checkout'] = 'git -C %s checkout %s' % (
+        cmd['checkout'] = 'git -C "%s" checkout %s' % (
             project_dir, project['tag'])
     else:
         cmd['clone'] += ' --depth 1 --branch %s --single-branch' % project['tag']
@@ -132,7 +132,7 @@ def clone_project(project, project_dir):
     clone_failed, _, clone_err = run_command(cmd['clone'], print_error=False)
     if clone_failed and 'master' in str(clone_err):
         clone_failed, _, _ = run_command(
-            'git clone %s %s' % (project['url'], project_dir))
+            'git clone %s "%s"' % (project['url'], project_dir))
     if clone_failed:
         return False
     if 'checkout' in cmd:
@@ -231,17 +231,17 @@ def log_project(project, project_dir, num_jobs):
         binary_dir = os.path.join(binary_dir, project["binary_dir"])
         make_dir(binary_dir)
     if build_sys == 'cmake':
-        cmd = "cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B%s -H%s" \
+        cmd = 'cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B"%s" -H"%s"' \
               % (binary_dir, project_dir)
         failed, _, _ = run_command(cmd, True, binary_dir)
     elif build_sys == 'makefile':
-        cmd = "CodeChecker log -b 'make -C%s -j%d' -o %s" \
-              % (project_dir, num_jobs, json_path)
+        cmd = "CodeChecker log -b 'make -j%d' -o \"%s\"" \
+              % (num_jobs, json_path)
         failed, _, _ = run_command(cmd, True, project_dir)
     elif build_sys == 'userprovided':
         project['make_command'] = \
             project['make_command'].replace("$JOBS", str(num_jobs))
-        cmd = "CodeChecker log -b '%s' -o %s" \
+        cmd = "CodeChecker log -b '%s' -o \"%s\"" \
               % (project['make_command'], json_path)
         failed, _, _ = run_command(cmd, True, project_dir, shell=True)
     if failed:
@@ -303,7 +303,7 @@ def check_project(project, project_dir, config, num_jobs):
         _, version_string, _ = run_command("clang --version", env=env)
         run_config["analyzer_version"] = version_string
         analyzers = config["CodeChecker"].get("analyzers", "clangsa")
-        cmd = ("CodeChecker analyze '%s' -j%d -o %s -q " +
+        cmd = ("CodeChecker analyze '%s' -j%d -o '%s' -q " +
                "--analyzers %s --capture-analysis-output") \
             % (json_path, num_jobs, result_path, analyzers)
         cmd += " --saargs %s " % filename
@@ -311,7 +311,7 @@ def check_project(project, project_dir, config, num_jobs):
         run_command(cmd, print_error=False, env=env)
 
         print("%s [%s] Done. Storing results..." % (timestamp(), name))
-        cmd = "CodeChecker store %s --url '%s' -n %s " \
+        cmd = "CodeChecker store '%s' --url '%s' -n %s " \
               % (result_path, config["CodeChecker"]["url"], name)
         if tag:
             cmd += " --tag %s " % tag
@@ -360,14 +360,14 @@ def post_process_project(project, project_dir, config, printer):
             cov_result_path = os.path.join(
                 run_config["result_path"], "coverage_merged")
             try:
-                run_command("MergeCoverage.py -i %s -o %s" %
+                run_command("MergeCoverage.py -i '%s' -o '%s'" %
                             (run_config["coverage_dir"], cov_result_path))
             except OSError:
                 print("[Warning] MergeCoverage.py is not found in path.")
             cov_result_html = os.path.join(
                 run_config["result_path"], "coverage.html")
             try:
-                run_command("gcovr -k -g %s --html --html-details -r %s -o %s" %
+                run_command("gcovr -k -g '%s' --html --html-details -r '%s' -o '%s'" %
                             (cov_result_path, project_dir, cov_result_html))
             except OSError:
                 print("[Warning] gcovr is not found in path.")
