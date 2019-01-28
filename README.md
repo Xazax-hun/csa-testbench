@@ -246,3 +246,51 @@ based on the bug reports presented by `CodeChecker cmd diff`:
 bug_stats.py --url http://example.org:8080/MyProduct --diff \
   --basename baseline --newname csa_patched --new
 ```
+
+Other Tips and Tricks
+---------------------
+
+### CReduce diffs
+
+[CReduce](https://embed.cs.utah.edu/creduce/) is a useful tool to get minimal reproducers for compiler bugs.
+It is also great for getting minimal reproducers for assertion fails or crashes of static analysis tools.
+Moreover, we can use this tool to get minimal regressions or improvements between two versions of an
+analysis engine.
+
+This section is a small example how to do it for the Clang Static Analyzer. 
+
+1. Create the file to reduce
+
+  Create a preprocessed file for which the two versions of the analyzer give different results
+
+2. Create the reduce script
+
+  Create a script that executes both versions of the analyzer on the preprocessed file and compares the output.
+  Note that this script should return 0 if a transformation of creduce preserved the property we want, and non-zero
+  otherwise. In case one of the implementations is crashed, we should return non-zero since our goal is not to get
+  minimal crash reproducers.
+  
+  ```bash
+  # reduce.sh
+  /path/to/basline/clang --analyze preprocessed.c 2> out1.txt
+  if [[ $? -ne 0 ]]; then
+    exit 1
+  fi
+  
+  /path/to/modified/clang --analyze preprocessed.c 2> out2.txt
+  if [[ $? -ne 0 ]]; then
+    exit 1
+  fi
+  
+  ! cmp --silent out1.txt out2.txt
+
+  exit $?
+  ```
+  
+3. Execute creduce and wait for the results
+
+  ```bash
+  creduce reduce.sh preprocessed.c --n 8
+  ```
+
+Note that the final result might contain a warning that differs from the initials.
