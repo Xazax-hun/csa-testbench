@@ -437,16 +437,15 @@ def main():
         sys.exit(1)
 
     if args.jobs < 1:
-        sys.stderr.write(
-            "[ERROR] Invalid number of jobs.\n")
+        sys.stderr.write("[ERROR] Invalid number of jobs.\n")
 
-    config_path = args.config
-    print("Using configuration file '%s'." % config_path)
-    config = load_config(config_path)
+    print("Using configuration file '%s'." % args.config)
+    config = load_config(args.config)
     script_dir = os.path.dirname(os.path.realpath(__file__))
     config["CodeChecker version"] = out
     _, out, _ = run_command("git rev-parse HEAD", False, cwd=script_dir)
     config["Script version"] = out
+    config["Script args"] = " ".join(sys.argv)
     print("Number of projects to process: %d.\n" % len(config['projects']))
 
     projects_root = os.path.join(TESTBENCH_ROOT, 'projects')
