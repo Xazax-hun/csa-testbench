@@ -141,7 +141,7 @@ configuration values are optional.
       "name": "redis",
       "url": "https://github.com/antirez/redis.git",
       "tag": "727dd43614ec45e23e2dedbba08b393323feaa4f",
-      "make_command": "make",
+      "make_command": "make -j $JOBS",
       "binary_dir": "build"
     },
     {
@@ -200,10 +200,12 @@ can be useful to make the experiments reproducible, i.e. always test with the
 same code.
 * **configure_command**: If this configuration value is set, the script will
 issue this command before building the project. It will not appear in the build
-log. The working directory will be the root of the project.
+log. The working directory will be the root of the project. The string `$JOBS`
+will be replaced with the number of jobs specified in the command line.
 * **make_command**: If this configuration value is set, the script will not try
 to infer the build system, but will invoke the `make` command specified in this
-value. The working directory will be the root of the project.
+value. The working directory will be the root of the project. The string `$JOBS`
+will be replaced with the number of jobs specified in the command line.
 * **binary_dir**: The binary dir can be specified for out-of-tree builds. It can
 be relative to the project root. Currently, this is only supported for `cmake`
 projects.

@@ -214,6 +214,8 @@ def log_project(project, project_dir, num_jobs):
     configure = True
     if 'configure_command' in project:
         configure = False
+        project['configure_command'] = \
+            project['configure_command'].replace("$JOBS", str(num_jobs))
         _, _, _ = run_command(project['configure_command'],
                               True, project_dir, shell=True)
     if 'make_command' in project:
@@ -237,6 +239,8 @@ def log_project(project, project_dir, num_jobs):
               % (project_dir, num_jobs, json_path)
         failed, _, _ = run_command(cmd, True, project_dir)
     elif build_sys == 'userprovided':
+        project['make_command'] = \
+            project['make_command'].replace("$JOBS", str(num_jobs))
         cmd = "CodeChecker log -b '%s' -o %s" \
               % (project['make_command'], json_path)
         failed, _, _ = run_command(cmd, True, project_dir, shell=True)
