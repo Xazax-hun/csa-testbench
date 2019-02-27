@@ -262,6 +262,18 @@ def update_path(path, env=None):
     env["PATH"] = path + ":" + env["PATH"]
     return env
 
+def pre_process_project(project, project_dir, config, num_jobs):
+    """Perform steps before the analysis begins."""
+
+    # Check out required subprojects.
+    try:
+        sub_projects = project["subprojects"]
+    except KeyError:
+        return
+
+    for sub_project in sub_projects:
+        sub_dir = os.path.join(project_dir, sub_project["subdir"])
+        clone_project(sub_project, sub_dir)
 
 def check_project(project, project_dir, config, num_jobs):
     """Analyze project and store the results with CodeChecker."""
@@ -466,6 +478,7 @@ def main():
         source_dir = os.path.join(project_dir, project.get("source_dir", ""))
         if not log_project(project, source_dir, args.jobs):
             continue
+        pre_process_project(project, source_dir, config, args.jobs)
         check_project(project, source_dir, config, args.jobs)
         post_process_project(project, source_dir, config, printer)
 
