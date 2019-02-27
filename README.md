@@ -55,6 +55,15 @@ Example configuration:
     {
       "name": "curl",
       "url": "https://github.com/curl/curl.git"
+    },
+    {
+      "name": "llvm",
+      "url": "https://github.com/llvm-mirror/llvm.git"
+      "subprojects": [
+        "name": "clang",
+        "subdir": "tools/clang"
+        "url": "https://github.com/llvm-mirror/clang.git"
+      ]
     }
   ],
   "configurations": [
