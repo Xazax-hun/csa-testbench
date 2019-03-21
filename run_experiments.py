@@ -366,6 +366,7 @@ def post_process_project(project, project_dir, config, printer):
         "CodeChecker cmd runs --url %s -o json" % config['CodeChecker']['url'])
     runs = json.loads(stdout)
     project_stats = {}
+    fatal_errors = 0
     for run_config in project["configurations"]:
         cov_result_html = None
         if os.path.isdir(run_config["coverage_dir"]):
@@ -419,6 +420,8 @@ def post_process_project(project, project_dir, config, printer):
         stats["Failed to analyze"] = failures
         stats["Compiler errors"] = errors
         stats["Number of assertions"] = asserts
+        # TODO: include crashes other than assertion failures in fatal_errors
+        fatal_errors += asserts
         if assert_toplist:
             assert_toplist = map(lambda x: "%s [%d]" % x, assert_toplist)
             stats["Top asserts"] = "<br>\n".join(assert_toplist)
@@ -431,6 +434,7 @@ def post_process_project(project, project_dir, config, printer):
 
     printer.extend_with_project(project["name"], project_stats)
     print("%s [%s] Postprocessed." % (timestamp(), project['name']))
+    return fatal_errors
 
 
 def main():
@@ -443,6 +447,10 @@ def main():
     parser.add_argument("-j", "--jobs", metavar="JOBS", type=int,
                         default=multiprocessing.cpu_count(),
                         help="number of jobs")
+    parser.add_argument("--fail-on-assert", dest='fail_on_assert',
+                        action='store_true',
+                        help="Return with non-zero error-code " +
+                             "when Clang asserts")
     args = parser.parse_args()
 
     try:
@@ -480,7 +488,12 @@ def main():
             continue
         pre_process_project(project, source_dir, config, args.jobs)
         check_project(project, source_dir, config, args.jobs)
-        post_process_project(project, source_dir, config, printer)
+        fatal_errors = post_process_project(project, source_dir, config,
+                                            printer)
+        if fatal_errors > 0 and args.fail_on_assert:
+            print('Stopping after assertion failure.')
+            printer.finish()
+            exit(1)
 
     printer.finish()
 
