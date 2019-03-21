@@ -23,6 +23,20 @@ python generate_project_list.py 'pthread_mutex_t' 'C C++' 5 −−output pthread
 The above command will generate a list of 5 projects written in either C or C++
 that use `pthread_mutex_t`.
 
+Generate Project List from debian packages
+------------------------------------------
+
+It is also possible to create a project list file from debian source packages.
+The resulting file however will contain lots of unsupported projects so it is
+advised to filter the list afterwards. 
+
+```bash
+python project_list_from_debian.py -u ftp://ftp.se.debian.org/debian/ --output debian.json
+```
+
+We do plan to include additional facilities to help with filtering the list
+and building the packages in the future.
+
 Running Experiments
 -------------------
 
