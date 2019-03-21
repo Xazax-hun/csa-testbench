@@ -72,10 +72,10 @@ Example configuration:
     },
     {
       "name": "llvm",
-      "url": "https://github.com/llvm-mirror/llvm.git"
+      "url": "https://github.com/llvm-mirror/llvm.git",
       "subprojects": [
         "name": "clang",
-        "subdir": "tools/clang"
+        "subdir": "tools/clang",
         "url": "https://github.com/llvm-mirror/clang.git"
       ]
     }
