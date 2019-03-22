@@ -72,7 +72,7 @@ def count_lines(project, project_dir):
                                 project.get('LOC', '?')))
 
 
-def clone_project(project, project_dir):
+def clone_project(project, project_dir, source_dir, is_subproject=False):
     """Clone a single project.
 
     Its version is specified by a version tag or a commit hash
@@ -87,7 +87,9 @@ def clone_project(project, project_dir):
     if os.path.isdir(project_dir):
         shutil.rmtree(project_dir)
 
-    print("%s [%s] Checking out project... " % (timestamp(), project['name']))
+    project_str = "subproject" if is_subproject else "project"
+    print("%s [%s] Checking out %s... " % (timestamp(), project['name'],
+                                           project_str))
 
     # Check if tarball is provided.
     # TODO: support zip files.
@@ -140,7 +142,13 @@ def clone_project(project, project_dir):
         if checkout_failed:
             return False
 
-    count_lines(project, project_dir)
+    for sub_project in project.get("subprojects", []):
+        sub_dir = os.path.join(source_dir, sub_project["subdir"])
+        if not clone_project(sub_project, sub_dir, sub_dir, True):
+            return False
+
+    if not is_subproject:
+        count_lines(project, project_dir)
 
     return True
 
@@ -262,18 +270,6 @@ def update_path(path, env=None):
     env["PATH"] = path + ":" + env["PATH"]
     return env
 
-def pre_process_project(project, project_dir, config, num_jobs):
-    """Perform steps before the analysis begins."""
-
-    # Check out required subprojects.
-    try:
-        sub_projects = project["subprojects"]
-    except KeyError:
-        return
-
-    for sub_project in sub_projects:
-        sub_dir = os.path.join(project_dir, sub_project["subdir"])
-        clone_project(sub_project, sub_dir)
 
 def check_project(project, project_dir, config, num_jobs):
     """Analyze project and store the results with CodeChecker."""
@@ -480,13 +476,12 @@ def main():
 
     for project in config['projects']:
         project_dir = os.path.join(projects_root, project['name'])
-        if not clone_project(project, project_dir):
+        source_dir = os.path.join(project_dir, project.get("source_dir", ""))
+        if not clone_project(project, project_dir, source_dir):
             shutil.rmtree(project_dir)
             continue
-        source_dir = os.path.join(project_dir, project.get("source_dir", ""))
         if not log_project(project, source_dir, args.jobs):
             continue
-        pre_process_project(project, source_dir, config, args.jobs)
         check_project(project, source_dir, config, args.jobs)
         fatal_errors = post_process_project(project, source_dir, config,
                                             printer)

@@ -69,17 +69,6 @@ Example configuration:
     {
       "name": "curl",
       "url": "https://github.com/curl/curl.git"
-    },
-    {
-      "name": "llvm",
-      "url": "https://github.com/llvm-mirror/llvm.git",
-      "subprojects": [
-        {
-          "name": "clang",
-          "subdir": "tools/clang",
-          "url": "https://github.com/llvm-mirror/clang.git"
-        }
-      ]
     }
   ],
   "configurations": [
@@ -178,6 +167,18 @@ configuration values are optional.
       "name": "icu",
       "url": "http://download.icu-project.org/files/icu4c/61.1/icu4c-61_1-src.tgz",
       "source_dir": "source"
+    },
+    {
+      "name": "llvm",
+      "url": "https://github.com/llvm-mirror/llvm.git",
+      "binary_dir": "build",
+      "subprojects": [
+        {
+          "name": "clang",
+          "subdir": "tools/clang",
+          "url": "https://github.com/llvm-mirror/clang.git"
+        }
+      ]
     }
   ],
   "configurations": [
