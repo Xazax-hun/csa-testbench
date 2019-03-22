@@ -216,6 +216,15 @@ def check_logged(projects_root, projects):
     return num
 
 
+def get_compilation_database(project, project_dir):
+    binary_dir = project_dir
+    if "binary_dir" in project:
+        binary_dir = os.path.join(binary_dir, project["binary_dir"])
+        make_dir(binary_dir)
+    json_path = os.path.join(binary_dir, "compile_commands.json")
+    return json_path
+
+
 def log_project(project, project_dir, num_jobs):
     if 'prepared' in project:
         return True
@@ -233,11 +242,7 @@ def log_project(project, project_dir, num_jobs):
     failed = not build_sys
 
     print("%s [%s] Generating build log... " % (timestamp(), project['name']))
-    json_path = os.path.join(project_dir, "compile_commands.json")
-    binary_dir = project_dir
-    if "binary_dir" in project:
-        binary_dir = os.path.join(binary_dir, project["binary_dir"])
-        make_dir(binary_dir)
+    json_path = get_compilation_database(project, project_dir)
     if build_sys == 'cmake':
         cmd = 'cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B"%s" -H"%s"' \
               % (binary_dir, project_dir)
@@ -271,13 +276,31 @@ def update_path(path, env=None):
     return env
 
 
+def build_package(project, project_dir, jobs):
+    print("%s [%s] Generating build log... " % (timestamp(), project['name']))
+    make_dir(project_dir)
+    json_path = get_compilation_database(project, project_dir)
+    if project["package_type"] == "vcpkg":
+        run_command("vcpkg remove %s" % project["package"], True, project_dir)
+        cmd = "CodeChecker log -b 'vcpkg install %s' -o \"%s\"" \
+        % (project["package"], json_path)
+        failed, _, _ = run_command(cmd, True, project_dir)
+        return not failed
+    elif project["package_type"] == "conan":
+        run_command("conan install %s" % project["package"], True, project_dir)
+        cmd = "CodeChecker log -b 'conan install %s --build' -o \"%s\"" \
+        % (project["package"], json_path)
+        failed, _, _ = run_command(cmd, True, project_dir)
+        return not failed
+    else:
+        print("%s [%s] Unsupported package." % (timestamp(), project['name']))
+        return False
+
+
 def check_project(project, project_dir, config, num_jobs):
     """Analyze project and store the results with CodeChecker."""
 
-    binary_dir = project_dir
-    if "binary_dir" in project:
-        binary_dir = os.path.join(binary_dir, project["binary_dir"])
-    json_path = os.path.join(binary_dir, "compile_commands.json")
+    json_path = get_compilation_database(project, project_dir)
     if "configurations" not in project:
         project["configurations"] = config.get("configurations",
                                                [{"name": ""}])
@@ -336,8 +359,8 @@ def process_failures(path, top=5):
     if not os.path.exists(path):
         return 0, 0, [], 0, []
     failures, asserts, errors = 0, Counter(), Counter()
-    assert_pattern = re.compile('Assertion.+failed\.')
-    error_pattern = re.compile('error: (.+)')
+    assert_pattern = re.compile(r'Assertion.+failed\.')
+    error_pattern = re.compile(r'error: (.+)')
     for name in os.listdir(path):
         if not name.endswith(".zip"):
             continue
@@ -476,12 +499,16 @@ def main():
 
     for project in config['projects']:
         project_dir = os.path.join(projects_root, project['name'])
-        source_dir = os.path.join(project_dir, project.get("source_dir", ""))
-        if not clone_project(project, project_dir, source_dir):
-            shutil.rmtree(project_dir)
-            continue
-        if not log_project(project, source_dir, args.jobs):
-            continue
+        source_dir = os.path.join(project_dir, project.get('source_dir', ''))
+        package = project.get('package')
+        if package:
+            build_package(project, project_dir, args.jobs)
+        else:
+            if not clone_project(project, project_dir, source_dir):
+                shutil.rmtree(project_dir)
+                continue
+            if not log_project(project, source_dir, args.jobs):
+                continue
         check_project(project, source_dir, config, args.jobs)
         fatal_errors = post_process_project(project, source_dir, config,
                                             printer)

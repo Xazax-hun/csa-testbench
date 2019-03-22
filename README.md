@@ -179,6 +179,16 @@ configuration values are optional.
           "url": "https://github.com/llvm-mirror/clang.git"
         }
       ]
+    },
+    {
+      "name": "zlibconan",
+      "package": "zlib/1.2.11@conan/stable",
+      "package_type": "conan",
+    },
+    {
+      "name": "zlibvcpkg",
+      "package": "zlib",
+      "package_type": "vcpkg",
     }
   ],
   "configurations": [
@@ -243,6 +253,10 @@ It will assume that a folder with the name of the project exists and contains a
 `compile_commands.json` file. It will use that file for the analysis of the
 project.
 * **charts**: The list of statistics that should be charted.
+* **subprojects**: List of other repositories to check out before building into the
+**subdir** directory.
+* **package_type**: package manager to build a C++ package.
+[Conan](https://conan.io/) and [vcpkg](https://docs.microsoft.com/en-us/cpp/vcpkg) are supported.
 
 ### Limitations
 
