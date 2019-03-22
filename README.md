@@ -130,6 +130,7 @@ configuration values are optional.
       "name": "tmux",
       "url": "https://github.com/tmux/tmux.git",
       "tag": "2.6",
+      "skip": [ "-*/cmd-break-pane.c*", "-*/cmd-bind-key.c*"],
       "configure_command": "sh autogen.sh && ./configure",
       "configurations": [
         {
@@ -257,6 +258,8 @@ project.
 **subdir** directory.
 * **package_type**: package manager to build a C++ package.
 [Conan](https://conan.io/) and [vcpkg](https://docs.microsoft.com/en-us/cpp/vcpkg) are supported.
+* **skip**: specify the [skiplist](https://github.com/Ericsson/codechecker/blob/master/docs/user_guide.md#skip)
+for a project. Each element in the list correspond to a line in the generated skiplist file.
 
 ### Limitations
 

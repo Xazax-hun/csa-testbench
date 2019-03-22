@@ -304,6 +304,9 @@ def check_project(project, project_dir, config, num_jobs):
     if "configurations" not in project:
         project["configurations"] = config.get("configurations",
                                                [{"name": ""}])
+    _, skippath = tempfile.mkstemp()
+    with open(skippath, 'w') as f:
+        f.write("\n".join(project.get("skip", [])))
     for run_config in project["configurations"]:
         result_dir = "cc_results"
         if run_config["name"]:
@@ -339,6 +342,7 @@ def check_project(project, project_dir, config, num_jobs):
             % (json_path, num_jobs, result_path, analyzers)
         cmd += " --saargs %s " % filename
         cmd += collect_args("analyze_args", conf_sources)
+        cmd += " --skip %s " % skippath
         run_command(cmd, print_error=False, env=env)
 
         print("%s [%s] Done. Storing results..." % (timestamp(), name))
@@ -349,6 +353,8 @@ def check_project(project, project_dir, config, num_jobs):
         cmd += collect_args("store_args", conf_sources)
         run_command(cmd, print_error=False, env=env)
         print("%s [%s] Results stored." % (timestamp(), name))
+
+    os.remove(skippath)
 
 
 def create_link(url, text):
