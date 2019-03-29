@@ -222,7 +222,7 @@ def get_compilation_database(project, project_dir):
         binary_dir = os.path.join(binary_dir, project["binary_dir"])
         make_dir(binary_dir)
     json_path = os.path.join(binary_dir, "compile_commands.json")
-    return json_path
+    return json_path, binary_dir
 
 
 def log_project(project, project_dir, num_jobs):
@@ -242,7 +242,7 @@ def log_project(project, project_dir, num_jobs):
     failed = not build_sys
 
     print("%s [%s] Generating build log... " % (timestamp(), project['name']))
-    json_path = get_compilation_database(project, project_dir)
+    json_path, binary_dir = get_compilation_database(project, project_dir)
     if build_sys == 'cmake':
         cmd = 'cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B"%s" -H"%s"' \
               % (binary_dir, project_dir)
@@ -279,7 +279,7 @@ def update_path(path, env=None):
 def build_package(project, project_dir, jobs):
     print("%s [%s] Generating build log... " % (timestamp(), project['name']))
     make_dir(project_dir)
-    json_path = get_compilation_database(project, project_dir)
+    json_path, _ = get_compilation_database(project, project_dir)
     if project["package_type"] == "vcpkg":
         run_command("vcpkg remove %s" % project["package"], True, project_dir)
         cmd = "CodeChecker log -b 'vcpkg install %s' -o \"%s\"" \
@@ -300,7 +300,7 @@ def build_package(project, project_dir, jobs):
 def check_project(project, project_dir, config, num_jobs):
     """Analyze project and store the results with CodeChecker."""
 
-    json_path = get_compilation_database(project, project_dir)
+    json_path, _ = get_compilation_database(project, project_dir)
     if "configurations" not in project:
         project["configurations"] = config.get("configurations",
                                                [{"name": ""}])
