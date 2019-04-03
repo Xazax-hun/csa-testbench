@@ -363,10 +363,11 @@ def create_link(url, text):
 
 def process_failures(path, top=5):
     if not os.path.exists(path):
-        return 0, 0, [], 0, []
-    failures, asserts, errors = 0, Counter(), Counter()
+        return 0, 0, [], 0, [], 0, []
+    failures, asserts, errors, warnings = 0, Counter(), Counter(), Counter()
     assert_pattern = re.compile(r'Assertion.+failed\.')
     error_pattern = re.compile(r'error: (.+)')
+    warning_pattern = re.compile(r'warning: (.+)')
     for name in os.listdir(path):
         if not name.endswith(".zip"):
             continue
@@ -381,9 +382,14 @@ def process_failures(path, top=5):
                 match = error_pattern.search(line)
                 if match:
                     errors[match.group(1)] += 1
+                match = warning_pattern.search(line)
+                if match:
+                    warnings[match.group(1)] += 1
 
     return failures, sum(asserts.values()), asserts.most_common(top), \
-        sum(errors.values()), errors.most_common(top)
+        sum(errors.values()), errors.most_common(top), sum(warnings.values()),\
+        warnings.most_common(top)
+
 
 
 def post_process_project(project, project_dir, config, printer):
@@ -440,11 +446,12 @@ def post_process_project(project, project_dir, config, printer):
         stats["Successfully analyzed"] = \
             len([name for name in os.listdir(run_config["result_path"])
                  if name.endswith(".plist")])
-        failures, asserts, assert_toplist, errors, error_toplist = \
-            process_failures(failed_dir)
+        failures, asserts, assert_toplist, errors, error_toplist, warnings, \
+            warning_toplist = process_failures(failed_dir)
         stats["Failed to analyze"] = failures
         stats["Compiler errors"] = errors
         stats["Number of assertions"] = asserts
+        stats["Number of warnings"] = warnings
         # TODO: include crashes other than assertion failures in fatal_errors
         fatal_errors += asserts
         if assert_toplist:
@@ -453,6 +460,9 @@ def post_process_project(project, project_dir, config, printer):
         if error_toplist:
             error_toplist = map(lambda x: "%s [%d]" % x, error_toplist)
             stats["Top errors"] = "<br>\n".join(error_toplist)
+        if warning_toplist:
+            warning_toplist = map(lambda x: "%s [%d]" % x, warning_toplist)
+            stats["Top warnings"] = "<br>\n".join(warning_toplist)
         stats["Lines of code"] = project.get("LOC", '?')
 
         project_stats[run_config["name"]] = stats
