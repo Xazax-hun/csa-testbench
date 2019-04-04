@@ -108,10 +108,27 @@ If `clang` is compiled with statistics enabled, the scripts will collect and
 include them in the final report.
 
 If [line based code coverage support is present](https://github.com/Xazax-hun/clang/commit/8428aeb89deb0b61a5d0101dc7fab962be0cf6e8),
-the script will collect coverage data and include it in the final report.
+the script can collect coverage data and include it in the final report.
 Note that this requires a patched version of `clang`, this feature is not
 upstreamed yet. For the code coverage collection support to work you need to
 have the `MergeCoverage.py` script and `gcovr` utility in the `PATH`.
+
+Add the `"coverage": true` line to the configuration in which you want to record the
+coverage:
+
+```json
+{
+  "projects": [ ... ],
+  "configurations": [
+    {
+      "name": "your_configuration",
+      "coverage": true
+    },
+    ...
+  ],
+  "CodeChecker": { ... }
+}
+```
 
 Example coverage report:
 
@@ -202,7 +219,8 @@ configuration values are optional.
     },
     {
       "name": "with_stats",
-      "clang_sa_args": "-Xclang -analyzer-stats"
+      "clang_sa_args": "-Xclang -analyzer-stats",
+      "coverage": true
     }
   ],
   "charts": ["Coverage", "Duration", "Result count"],
@@ -230,6 +248,7 @@ the same way as `clang_sa_args`.
 * **analyzers**: Which analyzers to run. Defaults to Clang Static Analyzer only.
 * **store_args**: Arguments passed to the `CodeChecker store` command. Works the
 same way as `clang_sa_args`.
+* **coverage**: If set to true, precise coverage information will be recorded.
 * **clang_path**: The directory containing the `clang` binaries. This can be
 useful for testing `clang` before and after a patch is applied.
 * **tag**: A commit hash or tag name of a project that will be checked out. It

@@ -312,12 +312,13 @@ def check_project(project, project_dir, config, num_jobs):
         if run_config["name"]:
             result_dir += "_" + run_config["name"]
         result_path = os.path.join(project_dir, result_dir)
-        coverage_dir = os.path.join(result_path, "coverage")
         run_config["result_path"] = result_path
-        run_config["coverage_dir"] = coverage_dir
         args_file, filename = tempfile.mkstemp()
-        os.write(args_file, " -Xclang -analyzer-config -Xclang record-coverage=%s "
-                 % coverage_dir)
+        if run_config.get("coverage", False):
+            coverage_dir = os.path.join(result_path, "coverage")
+            run_config["coverage_dir"] = coverage_dir
+            os.write(args_file," -Xclang -analyzer-config "
+                "-Xclang record-coverage=%s " % coverage_dir)
         conf_sources = [config["CodeChecker"], project, run_config]
         os.write(args_file, collect_args("clang_sa_args", conf_sources))
         os.close(args_file)
@@ -400,7 +401,8 @@ def post_process_project(project, project_dir, config, printer):
     fatal_errors = 0
     for run_config in project["configurations"]:
         cov_result_html = None
-        if os.path.isdir(run_config["coverage_dir"]):
+        if run_config.get("coverage", False) and \
+            os.path.isdir(run_config["coverage_dir"]):
             cov_result_path = os.path.join(
                 run_config["result_path"], "coverage_merged")
             try:
