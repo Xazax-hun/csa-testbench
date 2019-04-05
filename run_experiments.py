@@ -358,17 +358,23 @@ def check_project(project, project_dir, config, num_jobs):
     os.remove(skippath)
 
 
-def create_link(url, text):
-    return '<a href="%s">%s</a>' % (url, text)
+class RegexStat(object):
+    def __init__(self, name, regex):
+        self.name = name
+        self.regex = re.compile(regex)
+        self.counter = Counter()
 
-
-def process_failures(path, top=5):
+def process_failures(path, statistics=None):
+    if statistics is None:
+        statistics = []
+    statistics.extend([
+        RegexStat("warnings", r'warning: (.+)'),
+        RegexStat("compilation errors", r'error: (.+)'),
+        RegexStat("assertions", r'(Assertion.+failed\.)')
+    ])
     if not os.path.exists(path):
-        return 0, 0, [], 0, [], 0, []
-    failures, asserts, errors, warnings = 0, Counter(), Counter(), Counter()
-    assert_pattern = re.compile(r'Assertion.+failed\.')
-    error_pattern = re.compile(r'error: (.+)')
-    warning_pattern = re.compile(r'warning: (.+)')
+        return 0, statistics
+    failures  = 0
     for name in os.listdir(path):
         if not name.endswith(".zip"):
             continue
@@ -377,20 +383,16 @@ def process_failures(path, top=5):
         with zipfile.ZipFile(full_path) as archive, \
                 archive.open("stderr") as stderr:
             for line in stderr:
-                match = assert_pattern.search(line)
-                if match:
-                    asserts[match.group(0)] += 1
-                match = error_pattern.search(line)
-                if match:
-                    errors[match.group(1)] += 1
-                match = warning_pattern.search(line)
-                if match:
-                    warnings[match.group(1)] += 1
+                for s in statistics:
+                    match = s.regex.search(line)
+                    if match:
+                        s.counter[match.group(1)] += 1
 
-    return failures, sum(asserts.values()), asserts.most_common(top), \
-        sum(errors.values()), errors.most_common(top), sum(warnings.values()),\
-        warnings.most_common(top)
+    return failures, statistics
 
+
+def create_link(url, text):
+    return '<a href="%s">%s</a>' % (url, text)
 
 
 def post_process_project(project, project_dir, config, printer):
@@ -448,23 +450,14 @@ def post_process_project(project, project_dir, config, printer):
         stats["Successfully analyzed"] = \
             len([name for name in os.listdir(run_config["result_path"])
                  if name.endswith(".plist")])
-        failures, asserts, assert_toplist, errors, error_toplist, warnings, \
-            warning_toplist = process_failures(failed_dir)
+        failures, statistics = process_failures(failed_dir)
         stats["Failed to analyze"] = failures
-        stats["Compiler errors"] = errors
-        stats["Number of assertions"] = asserts
-        stats["Number of warnings"] = warnings
-        # TODO: include crashes other than assertion failures in fatal_errors
-        fatal_errors += asserts
-        if assert_toplist:
-            assert_toplist = map(lambda x: "%s [%d]" % x, assert_toplist)
-            stats["Top asserts"] = "<br>\n".join(assert_toplist)
-        if error_toplist:
-            error_toplist = map(lambda x: "%s [%d]" % x, error_toplist)
-            stats["Top errors"] = "<br>\n".join(error_toplist)
-        if warning_toplist:
-            warning_toplist = map(lambda x: "%s [%d]" % x, warning_toplist)
-            stats["Top warnings"] = "<br>\n".join(warning_toplist)
+        for s in statistics:
+            stats["Number of %s" % s.name] = sum(s.counter.values())
+            if stats["Number of %s" % s.name] > 0:
+                top = map(lambda x: "%s [%d]" % x, s.counter.most_common(5))
+                stats["Top %s" % s.name] = "<br>\n".join(top) 
+        fatal_errors += sum(statistics[-1].counter.values())
         stats["Lines of code"] = project.get("LOC", '?')
 
         project_stats[run_config["name"]] = stats
