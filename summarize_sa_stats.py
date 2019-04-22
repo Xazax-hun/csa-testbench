@@ -64,7 +64,7 @@ def summ_stats(path, verbose=True):
     if verbose:
         # Print the content of stat_map in a formatted way grouped by the statistic producing file.
         last_space = floor(log10(max(stat_map.values()))) + 1
-        for key in sorted(group.iterkeys(), key=(lambda x: group[x])):
+        for key in sorted(group.keys(), key=(lambda x: group[x])):
             val = stat_map[key]
             if isinstance(val, float):
                 num_of_spaces = int(last_space - floor(log10(int(val)))) - 4
@@ -82,8 +82,8 @@ def summ_stats_on_file(filename, stat_map, per_helper, group):
     for t in StatType:
         type_pattern += t.value + '|'
     type_pattern = type_pattern[:-1]
-    stat_pattern = re.compile("([0-9]+(?:\.[0-9]+)?) (.+) - (The (" + type_pattern + ") .+)")
-    timer_pattern = re.compile(".+\(.+\).+\(.+\).+\(.+\)(.+)\(.+\).+analyzer total time",
+    stat_pattern = re.compile(r"([0-9]+(?:\.[0-9]+)?) (.+) - (The (" + type_pattern + r") .+)")
+    timer_pattern = re.compile(r".+\(.+\).+\(.+\).+\(.+\)(.+)\(.+\).+analyzer total time",
                                re.IGNORECASE)
     act_nums = {}
     per_to_num_map = {}
@@ -116,9 +116,9 @@ def summ_stats_on_file(filename, stat_map, per_helper, group):
         # When all the other statistics has been processed (to a file) than check the % stats.
         elif is_in_stat_block:
             is_in_stat_block = False
-            for key, val in per_to_update.iteritems():
+            for key, val in per_to_update.items():
                 # Find the most similar # stat.
-                num_data = max(act_nums.iterkeys(), key=(lambda x: dice_coefficient(x, key)))
+                num_data = max(act_nums.keys(), key=(lambda x: dice_coefficient(x, key)))
                 per_helper[num_data] += int(act_nums[num_data] * float(val))
                 # Check for consistency.
                 assert (not (key in per_to_num_map and per_to_num_map[key] != num_data))

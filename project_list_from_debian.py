@@ -3,9 +3,14 @@ from __future__ import print_function
 import argparse as ap
 import gzip
 import json
-import shutil
-import urlparse
-from urllib import urlretrieve
+import os
+
+try:
+    from urlparse import urljoin
+    from urllib import urlretrieve
+except ImportError:
+    from urllib.parse import urljoin
+    from urllib.request import urlretrieve
 
 # TODO:
 #   * Filter packages based on dependencies that are installed 
@@ -15,7 +20,7 @@ from urllib import urlretrieve
 #   * Suggest apt command to install dependencies.
 
 
-FOLDERS   = '0123456789abcdefghijklmnopqrstuvwxyz'
+FOLDERS = '0123456789abcdefghijklmnopqrstuvwxyz'
 
 
 def main():
@@ -28,15 +33,17 @@ def main():
                         help="debian FTP mirror")
     args = parser.parse_args()
 
-    path, _ = urlretrieve(urlparse.urljoin(args.url, "ls-lR.gz"))
+    path, _ = urlretrieve(urljoin(args.url, "ls-lR.gz"))
     with gzip.open(path, 'rb') as f:
         lines = f.readlines()
-    shutil.rmtree(path)
+    os.remove(path)
 
     archives = []
     for folder in FOLDERS:
         filename = None
         for line in lines:
+            if isinstance(line, bytes):
+                line = line.decode('utf-8')
             line = line.strip()
             if len(line) < 4:
                 if filename:
@@ -46,20 +53,20 @@ def main():
             elif line[:13 + len(folder)] == './pool/main/' + folder + '/':
                 path = line[2:-1]
             elif path and line.find('.orig.tar.') > 0:
-                filename = line[1 + line.rfind(' '):]\
+                filename = line[1 + line.rfind(' '):]
 
-    result = { "projects": [],
-               "configurations": {
+    result = {"projects": [],
+              "configurations": {
                   "name": "baseline"
-                },
-               "CodeChecker": {
+              },
+              "CodeChecker": {
                   "url": "http://localhost:15010/Default"
-                }
-             }
+              }
+              }
     for a in archives:
         project = {
             "name": a.split("/")[-2],
-            "url": urlparse.urljoin(args.url, a)
+            "url": urljoin(args.url, a)
         }
         result["projects"].append(project)
 

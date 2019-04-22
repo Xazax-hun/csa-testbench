@@ -201,12 +201,12 @@ configuration values are optional.
     {
       "name": "zlibconan",
       "package": "zlib/1.2.11@conan/stable",
-      "package_type": "conan",
+      "package_type": "conan"
     },
     {
       "name": "zlibvcpkg",
       "package": "zlib",
-      "package_type": "vcpkg",
+      "package_type": "vcpkg"
     }
   ],
   "configurations": [

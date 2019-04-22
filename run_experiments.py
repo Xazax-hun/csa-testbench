@@ -117,7 +117,7 @@ def clone_project(project, project_dir, source_dir, is_subproject=False):
     try:
         int(project['tag'], base=16)
         commit_hash = True
-    except:
+    except ValueError:
         commit_hash = False
 
     # If the 'tag' value is a version tag, we can use shallow cloning.
@@ -284,13 +284,13 @@ def build_package(project, project_dir, jobs):
     if project["package_type"] == "vcpkg":
         run_command("vcpkg remove %s" % project["package"], True, project_dir)
         cmd = "CodeChecker log -b 'vcpkg install %s' -o \"%s\"" \
-        % (project["package"], json_path)
+            % (project["package"], json_path)
         failed, _, _ = run_command(cmd, True, project_dir)
         return not failed
     elif project["package_type"] == "conan":
         run_command("conan install %s" % project["package"], True, project_dir)
         cmd = "CodeChecker log -b 'conan install %s --build' -o \"%s\"" \
-        % (project["package"], json_path)
+            % (project["package"], json_path)
         failed, _, _ = run_command(cmd, True, project_dir)
         return not failed
     else:
@@ -318,8 +318,8 @@ def check_project(project, project_dir, config, num_jobs):
         if run_config.get("coverage", False):
             coverage_dir = os.path.join(result_path, "coverage")
             run_config["coverage_dir"] = coverage_dir
-            os.write(args_file," -Xclang -analyzer-config "
-                "-Xclang record-coverage=%s " % coverage_dir)
+            os.write(args_file, " -Xclang -analyzer-config "
+                                "-Xclang record-coverage=%s " % coverage_dir)
         conf_sources = [config["CodeChecker"], project, run_config]
         os.write(args_file, collect_args("clang_sa_args", conf_sources))
         os.close(args_file)
@@ -365,6 +365,7 @@ class RegexStat(object):
         self.regex = re.compile(regex)
         self.counter = Counter()
 
+
 def process_failures(path, statistics=None):
     if statistics is None:
         statistics = []
@@ -375,7 +376,7 @@ def process_failures(path, statistics=None):
     ])
     if not os.path.exists(path):
         return 0, statistics
-    failures  = 0
+    failures = 0
     for name in os.listdir(path):
         if not name.endswith(".zip"):
             continue
@@ -405,7 +406,7 @@ def post_process_project(project, project_dir, config, printer):
     for run_config in project["configurations"]:
         cov_result_html = None
         if run_config.get("coverage", False) and \
-            os.path.isdir(run_config["coverage_dir"]):
+           os.path.isdir(run_config["coverage_dir"]):
             cov_result_path = os.path.join(
                 run_config["result_path"], "coverage_merged")
             try:
