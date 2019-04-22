@@ -1,8 +1,8 @@
+#!/usr/bin/env python2
 from __future__ import print_function
 import argparse as ap
 import gzip
 import json
-import os
 import shutil
 import urlparse
 from urllib import urlretrieve
@@ -29,10 +29,9 @@ def main():
     args = parser.parse_args()
 
     path, _ = urlretrieve(urlparse.urljoin(args.url, "ls-lR.gz"))
-    print(path)
     with gzip.open(path, 'rb') as f:
         lines = f.readlines()
-    #shutil.rmtree(path)
+    shutil.rmtree(path)
 
     archives = []
     for folder in FOLDERS:

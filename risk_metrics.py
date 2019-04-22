@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 from git import Repo
 import sys
 import json

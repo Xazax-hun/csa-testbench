@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 from collections import defaultdict
 from cgi import escape
 from datetime import timedelta

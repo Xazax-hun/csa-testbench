@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 import argparse as ap
 import json
 import requests
