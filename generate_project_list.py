@@ -72,8 +72,16 @@ def main():
 
     projects = get_unique_sorted_projects(matches)[:args.n]
 
+    output = {'projects': projects,
+              'configurations': {
+                  'name': 'baseline'
+              },
+              'CodeChecker': {
+                  'url': 'http://localhost:8001/Default'
+              }
+              }
     with open(args.output, 'w+') as config_file:
-        json.dump({'projects': projects}, config_file, indent=2)
+        json.dump(output, config_file, indent=2)
 
     print("Done.")
 

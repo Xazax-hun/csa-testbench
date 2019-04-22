@@ -60,7 +60,7 @@ def main():
                   "name": "baseline"
               },
               "CodeChecker": {
-                  "url": "http://localhost:15010/Default"
+                  "url": "http://localhost:8001/Default"
               }
               }
     for a in archives:
