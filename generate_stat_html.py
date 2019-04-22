@@ -96,7 +96,8 @@ class HTMLPrinter(object):
             stat_html.write("<!-- %s -->\n" %
                             escape(json.dumps(config)))
             # Generate nav bar.
-            stat_html.write('<nav>\n<div class="nav nav-tabs" id="nav-tab" role="tablist">\n')
+            stat_html.write('<nav>\n<div class="nav nav-tabs" '
+                            'id="nav-tab" role="tablist">\n')
             active = "active"
             for project in config["projects"]:
                 name = escape(project["name"])
@@ -108,7 +109,8 @@ class HTMLPrinter(object):
                 active = ""
             text = '<a class="nav-item nav-link" id="nav-charts-tab"' \
                    ' data-toggle="tab" href="#nav-charts" role="tab"' \
-                   ' aria-controls="nav-charts" aria-selected="false">Charts</a>'
+                   ' aria-controls="nav-charts" aria-selected="false">' \
+                   'Charts</a>'
             stat_html.write(text)
             stat_html.write('</div>\n</nav>\n')
             stat_html.write('<div class="tab-content" id="nav-tabContent">\n')
@@ -133,7 +135,8 @@ class HTMLPrinter(object):
               'id="nav-{1}" role="tabpanel" aria-labelledby="nav-{1}-tab">\n'\
             .format("show active" if first else "", escape(name))
         stat_html.write(tab)
-        stat_html.write('<table class="table table-bordered table-striped table-sm">\n')
+        stat_html.write('<table class="table table-bordered '
+                        'table-striped table-sm">\n')
         stat_html.write('<thead class="thead-dark">')
         stat_html.write("<tr>\n")
         stat_html.write("<th>Statistic Name</th>")

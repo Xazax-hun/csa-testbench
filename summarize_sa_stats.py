@@ -1,4 +1,6 @@
 #!/usr/bin/env python2
+from __future__ import print_function
+from __future__ import division
 import sys
 import re
 import os
@@ -8,7 +10,7 @@ from math import log10, floor
 
 
 def dice_coefficient(a, b):
-    if not len(a) or not len(b):
+    if not a or not b:
         return 0.0
     # Quick case for true duplicates.
     if a == b:
@@ -24,10 +26,8 @@ def dice_coefficient(a, b):
     a_bigram_list.sort()
     b_bigram_list.sort()
 
-    # Assignments to save function calls.
     lena = len(a_bigram_list)
     lenb = len(b_bigram_list)
-    # Initialize match counters.
     matches = i = j = 0
     while i < lena and j < lenb:
         if a_bigram_list[i] == b_bigram_list[j]:
@@ -38,7 +38,7 @@ def dice_coefficient(a, b):
             i += 1
         else:
             j += 1
-    score = float(matches) / float(lena + lenb)
+    score = matches / (lena + lenb)
     return score
 
 
@@ -121,7 +121,7 @@ def summ_stats_on_file(filename, stat_map, per_helper, group):
                 num_data = max(act_nums.keys(), key=(lambda x: dice_coefficient(x, key)))
                 per_helper[num_data] += int(act_nums[num_data] * float(val))
                 # Check for consistency.
-                assert (not (key in per_to_num_map and per_to_num_map[key] != num_data))
+                assert not (key in per_to_num_map and per_to_num_map[key] != num_data)
                 per_to_num_map[key] = num_data
                 stat_map[key] = floor(per_helper[num_data]) / stat_map[num_data]
             act_nums = {}

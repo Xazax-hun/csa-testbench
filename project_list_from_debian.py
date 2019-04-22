@@ -13,7 +13,7 @@ except ImportError:
     from urllib.request import urlretrieve
 
 # TODO:
-#   * Filter packages based on dependencies that are installed 
+#   * Filter packages based on dependencies that are installed
 #     on the host system.
 #   * Filter packages based on language/build system.
 #   * Support building packages in a fake-root environment.
@@ -24,8 +24,8 @@ FOLDERS = '0123456789abcdefghijklmnopqrstuvwxyz'
 
 
 def main():
-    parser = ap.ArgumentParser(description="Create project list from debian " +
-                                           "source packages.",
+    parser = ap.ArgumentParser(description="Create project list from debian "
+                               "source packages.",
                                formatter_class=ap.RawTextHelpFormatter)
     parser.add_argument("--output", metavar="FILE",
                         help="JSON file holding a list of projects")

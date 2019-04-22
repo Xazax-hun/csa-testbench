@@ -28,8 +28,8 @@ TESTBENCH_ROOT = os.getcwd()
 def make_dir(path):
     try:
         os.makedirs(path)
-    except OSError as e:
-        if e.errno != errno.EEXIST:
+    except OSError as ex:
+        if ex.errno != errno.EEXIST:
             raise
 
 
@@ -109,8 +109,7 @@ def clone_project(project, project_dir, source_dir, is_subproject=False):
 
     # If there is no tag specified, we clone the master branch.
     # This presumes that a master branch exists.
-    if 'tag' not in project:
-        project['tag'] = 'master'
+    project['tag'] = project.get('tag', 'master')
 
     try:
         int(project['tag'], base=16)
@@ -127,7 +126,8 @@ def clone_project(project, project_dir, source_dir, is_subproject=False):
         cmd['checkout'] = 'git -C "%s" checkout %s' % (
             project_dir, project['tag'])
     else:
-        cmd['clone'] += ' --depth 1 --branch %s --single-branch' % project['tag']
+        cmd['clone'] += ' --depth 1 --branch %s --single-branch' % \
+                        project['tag']
 
     sys.stdout.flush()
     clone_failed, _, clone_err = run_command(cmd['clone'], print_error=False)
@@ -285,15 +285,14 @@ def build_package(project, project_dir, jobs):
             % (project["package"], json_path)
         failed, _, _ = run_command(cmd, True, project_dir)
         return not failed
-    elif project["package_type"] == "conan":
+    if project["package_type"] == "conan":
         run_command("conan install %s" % project["package"], True, project_dir)
         cmd = "CodeChecker log -b 'conan install %s --build' -o \"%s\"" \
             % (project["package"], json_path)
         failed, _, _ = run_command(cmd, True, project_dir)
         return not failed
-    else:
-        print("%s [%s] Unsupported package." % (timestamp(), project['name']))
-        return False
+    print("%s [%s] Unsupported package." % (timestamp(), project['name']))
+    return False
 
 
 def check_project(project, project_dir, config, num_jobs):
@@ -304,8 +303,8 @@ def check_project(project, project_dir, config, num_jobs):
         project["configurations"] = config.get("configurations",
                                                [{"name": ""}])
     _, skippath = tempfile.mkstemp()
-    with open(skippath, 'w') as f:
-        f.write("\n".join(project.get("skip", [])))
+    with open(skippath, 'w') as skipfile:
+        skipfile.write("\n".join(project.get("skip", [])))
     for run_config in project["configurations"]:
         result_dir = "cc_results"
         if run_config["name"]:
@@ -383,10 +382,10 @@ def process_failures(path, statistics=None):
         with zipfile.ZipFile(full_path) as archive, \
                 archive.open("stderr") as stderr:
             for line in stderr:
-                for s in statistics:
-                    match = s.regex.search(line)
+                for stat in statistics:
+                    match = stat.regex.search(line)
                     if match:
-                        s.counter[match.group(1)] += 1
+                        stat.counter[match.group(1)] += 1
 
     return failures, statistics
 
@@ -415,8 +414,9 @@ def post_process_project(project, project_dir, config, printer):
             cov_result_html = os.path.join(
                 run_config["result_path"], "coverage.html")
             try:
-                run_command("gcovr -k -g '%s' --html --html-details -r '%s' -o '%s'" %
-                            (cov_result_path, project_dir, cov_result_html))
+                run_command(
+                    "gcovr -k -g '%s' --html --html-details -r '%s' -o '%s'" %
+                    (cov_result_path, project_dir, cov_result_html))
             except OSError:
                 print("[Warning] gcovr is not found in path.")
             cov_summary = summarize_gcov(cov_result_path)
@@ -443,20 +443,21 @@ def post_process_project(project, project_dir, config, printer):
                 break
         stats["Result count"] = run["resultCount"]
         stats["Duration"] = timedelta(seconds=run["duration"])
-        stats["CodeChecker link"] = create_link("%s/#run=%s&tab=%s" %
-                                                (config['CodeChecker']['url'], run_config['full_name'],
-                                                 run_config['full_name']),
-                                                "CodeChecker")
+        stats["CodeChecker link"] = \
+            create_link("%s/#run=%s&tab=%s" % (config['CodeChecker']['url'],
+                                               run_config['full_name'],
+                                               run_config['full_name']),
+                        "CodeChecker")
         stats["Successfully analyzed"] = \
             len([name for name in os.listdir(run_config["result_path"])
                  if name.endswith(".plist")])
         failures, statistics = process_failures(failed_dir)
         stats["Failed to analyze"] = failures
-        for s in statistics:
-            stats["Number of %s" % s.name] = sum(s.counter.values())
-            if stats["Number of %s" % s.name] > 0:
-                top = map(lambda x: "%s [%d]" % x, s.counter.most_common(5))
-                stats["Top %s" % s.name] = "<br>\n".join(top) 
+        for stat in statistics:
+            stats["Number of %s" % stat.name] = sum(stat.counter.values())
+            if stats["Number of %s" % stat.name] > 0:
+                top = ["%s [%d]" % x for x in stat.counter.most_common(5)]
+                stats["Top %s" % stat.name] = "<br>\n".join(top)
         fatal_errors += sum(statistics[-1].counter.values())
         stats["Lines of code"] = project.get("LOC", '?')
 
@@ -468,8 +469,8 @@ def post_process_project(project, project_dir, config, printer):
 
 
 def main():
-    parser = ap.ArgumentParser(description="Run differential analysis " +
-                                           "experiment on a set of projects.",
+    parser = ap.ArgumentParser(description="Run differential analysis "
+                               "experiment on a set of projects.",
                                formatter_class=ap.RawTextHelpFormatter)
     parser.add_argument("--config", metavar="FILE",
                         default='test_config.json',
@@ -479,7 +480,7 @@ def main():
                         help="number of jobs")
     parser.add_argument("--fail-on-assert", dest='fail_on_assert',
                         action='store_true',
-                        help="Return with non-zero error-code " +
+                        help="Return with non-zero error-code "
                              "when Clang asserts")
     args = parser.parse_args()
 
