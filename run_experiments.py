@@ -52,8 +52,6 @@ def run_command(cmd, print_error=True, cwd=None, env=None, shell=False):
     proc = sp.Popen(args, stdin=sp.PIPE, stdout=sp.PIPE,
                     stderr=sp.PIPE, cwd=cwd, env=env, shell=shell)
     stdout, stderr = proc.communicate()
-    # CC usually does not return with 0, but printing empty
-    # error messages in that case is needless.
     if proc.returncode != 0 and print_error:
         output = stderr if stderr else stdout
         sys.stderr.write("[ERROR] %s\n" % str(output))
@@ -62,7 +60,7 @@ def run_command(cmd, print_error=True, cwd=None, env=None, shell=False):
 
 def count_lines(project, project_dir):
     failed, stdout, _ = run_command(
-        'cloc "%s" --json --not-match-d="cc_results"' % project_dir)
+        'cloc "%s" --json --not-match-d="cc_results"' % project_dir, False)
     if not failed:
         try:
             cloc_json_out = json.loads(stdout)
@@ -345,7 +343,7 @@ def check_project(project, project_dir, config, num_jobs):
         cmd += " --saargs %s " % filename
         cmd += collect_args("analyze_args", conf_sources)
         cmd += " --skip %s " % skippath
-        run_command(cmd, print_error=False, env=env)
+        run_command(cmd, print_error=True, env=env)
 
         print("%s [%s] Done. Storing results..." % (timestamp(), name))
         cmd = "CodeChecker store '%s' --url '%s' -n %s " \
@@ -353,7 +351,7 @@ def check_project(project, project_dir, config, num_jobs):
         if tag:
             cmd += " --tag %s " % tag
         cmd += collect_args("store_args", conf_sources)
-        run_command(cmd, print_error=False, env=env)
+        run_command(cmd, print_error=True, env=env)
         print("%s [%s] Results stored." % (timestamp(), name))
 
     os.remove(skippath)
