@@ -369,7 +369,8 @@ def process_failures(path, statistics=None):
     statistics.extend([
         RegexStat("warnings", r'warning: (.+)'),
         RegexStat("compilation errors", r'error: (.+)'),
-        RegexStat("assertions", r'(Assertion.+failed\.)')
+        RegexStat("assertions", r'(Assertion.+failed\.)'),
+        RegexStat("unreachable", r'UNREACHABLE executed at (.+)')
     ])
     if not os.path.exists(path):
         return 0, statistics
