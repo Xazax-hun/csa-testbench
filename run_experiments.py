@@ -459,7 +459,8 @@ def post_process_project(project, project_dir, config, printer):
             if stats["Number of %s" % stat.name] > 0:
                 top = ["%s [%d]" % x for x in stat.counter.most_common(5)]
                 stats["Top %s" % stat.name] = "<br>\n".join(top)
-        fatal_errors += sum(statistics[-1].counter.values())
+        fatal_errors += sum(statistics[-1].counter.values()) + \
+                        sum(statistics[-2].counter.values())
         stats["Lines of code"] = project.get("LOC", '?')
 
         project_stats[run_config["name"]] = stats
