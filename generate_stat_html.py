@@ -1,8 +1,8 @@
 #!/usr/bin/env python2
-from collections import defaultdict
-from cgi import escape
-from datetime import timedelta
 import json
+from cgi import escape
+from collections import defaultdict
+from datetime import timedelta
 
 try:
     import plotly.offline as py

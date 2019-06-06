@@ -1,11 +1,11 @@
 #!/usr/bin/env python2
-from git import Repo
-import sys
 import json
 import math
 import os
+import sys
 from collections import defaultdict
 
+from git import Repo
 
 # Implementation of algorithms from:
 # https://static.googleusercontent.com/media/research.google.com/hu//pubs/archive/41145.pdf
@@ -65,4 +65,3 @@ if __name__ == "__main__":
     arg_num = len(sys.argv)
     main(sys.argv[1], sys.argv[2] if 2 < arg_num else None,
          sys.argv[3] if 3 < arg_num else None)
-

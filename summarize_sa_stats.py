@@ -1,12 +1,12 @@
 #!/usr/bin/env python2
-from __future__ import print_function
-from __future__ import division
-import sys
-import re
+from __future__ import division, print_function
+
 import os
-from enum import Enum
+import re
+import sys
 from collections import defaultdict
-from math import log10, floor
+from enum import Enum
+from math import floor, log10
 
 
 def dice_coefficient(a, b):

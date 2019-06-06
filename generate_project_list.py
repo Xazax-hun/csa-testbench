@@ -1,9 +1,11 @@
 #!/usr/bin/env python2
 from __future__ import print_function
+
 import argparse as ap
 import json
-import requests
 import sys
+
+import requests
 
 LANG_CODES = {'c': 28, 'c++': 16, 'objectivec': 21, 'objectivec++': 35}
 

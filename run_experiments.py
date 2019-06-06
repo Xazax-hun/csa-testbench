@@ -1,9 +1,7 @@
 #!/usr/bin/env python2
 from __future__ import print_function
+
 import argparse as ap
-from collections import Counter
-from datetime import datetime, timedelta
-from distutils.dir_util import copy_tree
 import errno
 import json
 import multiprocessing
@@ -15,12 +13,15 @@ import subprocess as sp
 import sys
 import tarfile
 import tempfile
-from urllib import urlretrieve
 import zipfile
+from collections import Counter
+from datetime import datetime, timedelta
+from distutils.dir_util import copy_tree
+from urllib import urlretrieve
 
-from summarize_sa_stats import summ_stats
-from summarize_gcov import summarize_gcov
 from generate_stat_html import HTMLPrinter
+from summarize_gcov import summarize_gcov
+from summarize_sa_stats import summ_stats
 
 TESTBENCH_ROOT = os.getcwd()
 
