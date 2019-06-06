@@ -82,7 +82,7 @@ def main():
               'CodeChecker': {
                   'url': 'http://localhost:8001/Default'
               }
-              }
+             }
     with open(args.output, 'w+') as config_file:
         json.dump(output, config_file, indent=2)
 
