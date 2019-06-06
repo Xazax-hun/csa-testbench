@@ -341,8 +341,8 @@ def check_project(project, project_dir, config, num_jobs):
                "--analyzers %s --capture-analysis-output") \
             % (json_path, num_jobs, result_path, analyzers)
         cmd += " --saargs %s " % filename
-        cmd += collect_args("analyze_args", conf_sources)
         cmd += " --skip %s " % skippath
+        cmd += collect_args("analyze_args", conf_sources)
         run_command(cmd, print_error=True, env=env)
 
         print("%s [%s] Done. Storing results..." % (timestamp(), name))
@@ -358,21 +358,40 @@ def check_project(project, project_dir, config, num_jobs):
 
 
 class RegexStat(object):
-    def __init__(self, name, regex):
-        self.name = name
+    def __init__(self, regex):
         self.regex = re.compile(regex)
         self.counter = Counter()
 
 
+def process_success(path, statistics=None):
+    if statistics is None:
+        statistics = dict()
+    statistics.update({
+        "warnings": RegexStat(r'warning: (.+)')
+    })
+    if not os.path.exists(path):
+        return statistics
+    for name in os.listdir(path):
+        if not name.endswith(".txt"):
+            continue
+        with open(os.path.join(path, name)) as compiler_output:
+            for line in compiler_output:
+                for _, stat in statistics.items():
+                    match = stat.regex.search(line)
+                    if match:
+                        stat.counter[match.group(1)] += 1
+    return statistics
+
+
 def process_failures(path, statistics=None):
     if statistics is None:
-        statistics = []
-    statistics.extend([
-        RegexStat("warnings", r'warning: (.+)'),
-        RegexStat("compilation errors", r'error: (.+)'),
-        RegexStat("assertions", r'(Assertion.+failed\.)'),
-        RegexStat("unreachable", r'UNREACHABLE executed at (.+)')
-    ])
+        statistics = dict()
+    statistics.update({
+        "warnings": RegexStat(r'warning: (.+)'),
+        "compilation errors": RegexStat(r'error: (.+)'),
+        "assertions": RegexStat(r'(Assertion.+failed\.)'),
+        "unreachable": RegexStat(r'UNREACHABLE executed at (.+)')
+    })
     if not os.path.exists(path):
         return 0, statistics
     failures = 0
@@ -384,7 +403,7 @@ def process_failures(path, statistics=None):
         with zipfile.ZipFile(full_path) as archive, \
                 archive.open("stderr") as stderr:
             for line in stderr:
-                for stat in statistics:
+                for _, stat in statistics.items():
                     match = stat.regex.search(line)
                     if match:
                         stat.counter[match.group(1)] += 1
@@ -453,15 +472,17 @@ def post_process_project(project, project_dir, config, printer):
         stats["Successfully analyzed"] = \
             len([name for name in os.listdir(run_config["result_path"])
                  if name.endswith(".plist")])
-        failures, statistics = process_failures(failed_dir)
-        stats["Failed to analyze"] = failures
-        for stat in statistics:
-            stats["Number of %s" % stat.name] = sum(stat.counter.values())
-            if stats["Number of %s" % stat.name] > 0:
+        success_stats = process_success(stats_dir)
+        failure_num, failure_stats = process_failures(failed_dir)
+        failure_stats["warnings"].counter += success_stats["warnings"].counter
+        stats["Failed to analyze"] = failure_num
+        for name, stat in failure_stats.items():
+            stats["Number of %s" % name] = sum(stat.counter.values())
+            if stats["Number of %s" % name] > 0:
                 top = ["%s [%d]" % x for x in stat.counter.most_common(5)]
-                stats["Top %s" % stat.name] = "<br>\n".join(top)
-        fatal_errors += sum(statistics[-1].counter.values()) + \
-                        sum(statistics[-2].counter.values())
+                stats["Top %s" % name] = "<br>\n".join(top)
+        fatal_errors += sum(failure_stats["assertions"].counter.values()) + \
+                        sum(failure_stats["unreachable"].counter.values())
         stats["Lines of code"] = project.get("LOC", '?')
 
         project_stats[run_config["name"]] = stats
