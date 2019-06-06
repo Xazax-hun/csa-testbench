@@ -3,15 +3,16 @@ import json
 from cgi import escape
 from collections import defaultdict
 from datetime import timedelta
+from difflib import SequenceMatcher
 
 try:
     import plotly.offline as py
     import plotly.graph_objs as go
-    charts_supported = True
+    CHARTS_SUPPORTED = True
 except ImportError:
-    charts_supported = False
+    CHARTS_SUPPORTED = False
 
-header = """
+HEADER = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -68,7 +69,7 @@ header = """
 <div class="container">
 """
 
-footer = """
+FOOTER = """
 </div>
 </div>
 <footer>
@@ -82,6 +83,38 @@ footer = """
 """
 
 
+def longest_match(a, b):
+    return SequenceMatcher(None, a, b).\
+        find_longest_match(0, len(a), 0, len(b)).size
+
+
+def sort_keys_by_similarity(keys):
+    """
+    Sort keys by simialrity. This is an approximation of the
+    optimal order. For each insertion to an intermediate list we
+    calculate a score and choose the best insertion. The score also
+    have a penalty part if the insertion reduces the similarity of
+    the neighbours.
+    """
+    result = []
+    for key in keys:
+        index = 0
+        max_score = -1000
+        for j in range(len(result)+1):
+            score = 0
+            if j < len(result):
+                score += longest_match(key, result[j])
+            if j > 0:
+                score += longest_match(key, result[j-1])
+            if 0 < j < len(result):
+                score -= longest_match(result[j], result[j-1])
+            if score > max_score:
+                max_score = score
+                index = j
+        result.insert(index, key)
+    return result
+
+
 # FIXME: Escape strings.
 class HTMLPrinter(object):
 
@@ -92,7 +125,7 @@ class HTMLPrinter(object):
         self.as_comment = ["Analyzer version"]
         self.projects = {}
         with open(self.html_path, 'w') as stat_html:
-            stat_html.write(header)
+            stat_html.write(HEADER)
             stat_html.write("<!-- %s -->\n" %
                             escape(json.dumps(config)))
             # Generate nav bar.
@@ -118,7 +151,7 @@ class HTMLPrinter(object):
     def finish(self):
         with open(self.html_path, 'a') as stat_html:
             self._generate_charts(stat_html)
-            stat_html.write(footer)
+            stat_html.write(FOOTER)
 
     def extend_with_project(self, name, data):
         first = len(self.projects) == 0
@@ -130,6 +163,7 @@ class HTMLPrinter(object):
             configurations.add(configuration)
             for stat_name in val:
                 keys.add(stat_name)
+        keys = sort_keys_by_similarity(keys)
 
         tab = '<div class="tab-pane fade {0}" ' \
               'id="nav-{1}" role="tabpanel" aria-labelledby="nav-{1}-tab">\n'\
@@ -172,7 +206,7 @@ class HTMLPrinter(object):
 
     @staticmethod
     def _generate_time_histogram(stat_html, configurations, data):
-        if not charts_supported:
+        if not CHARTS_SUPPORTED:
             return
         traces = []
         for conf in configurations:
@@ -193,7 +227,7 @@ class HTMLPrinter(object):
     def _generate_charts(self, stat_html):
         stat_html.write('<div class="tab-pane fade" id="nav-charts"'
                         ' role="tabpanel" aria-labelledby="nav-charts-tab">\n')
-        if not charts_supported:
+        if not CHARTS_SUPPORTED:
             stat_html.write("<p>Charts not supported."
                             "Install Plotly python library.</p>\n</div>\n")
             return
