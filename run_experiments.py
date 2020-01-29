@@ -515,6 +515,9 @@ def main():
                         action='store_true',
                         help="Return with non-zero error-code "
                              "when Clang asserts")
+    parser.add_argument("-o", "--output", metavar="RESULT_DIR",
+                        dest='output', default='projects',
+                        help="Directory where results should be generated")
     args = parser.parse_args()
 
     try:
@@ -536,7 +539,7 @@ def main():
     config["Script args"] = " ".join(sys.argv)
     print("Number of projects to process: %d.\n" % len(config['projects']))
 
-    projects_root = os.path.join(TESTBENCH_ROOT, 'projects')
+    projects_root = os.path.abspath(args.output)
     make_dir(projects_root)
 
     stats_html = os.path.join(projects_root, "stats.html")
