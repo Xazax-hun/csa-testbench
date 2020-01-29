@@ -494,6 +494,13 @@ def post_process_project(project, project_dir, config, printer):
                         sum(failure_stats["unreachable"].counter.values())
         stats["Lines of code"] = project.get("LOC", '?')
 
+        disk_usage = 0
+        for path, _, files in os.walk(run_config['result_path']):
+            for file in files:
+                disk_usage += os.path.getsize(os.path.join(path,file))
+
+        stats["Disk usage"] = disk_usage
+
         project_stats[run_config["name"]] = stats
 
     printer.extend_with_project(project["name"], project_stats)
