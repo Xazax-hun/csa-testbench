@@ -1,6 +1,4 @@
-#!/usr/bin/env python2
-from __future__ import print_function
-
+#!/usr/bin/env python3
 import argparse as ap
 import errno
 import json
@@ -17,7 +15,7 @@ import zipfile
 from collections import Counter
 from datetime import datetime, timedelta
 from distutils.dir_util import copy_tree
-from urllib import urlretrieve
+from urllib.request import urlretrieve
 
 from generate_stat_html import HTMLPrinter
 from summarize_gcov import summarize_gcov
@@ -40,7 +38,8 @@ def timestamp():
 
 def load_config(filename):
     config_path = os.path.join(TESTBENCH_ROOT, filename)
-    with open(config_path, 'r') as config_file:
+    with open(config_path, "r", encoding="utf-8", errors="ignore") \
+        as config_file:
         config_dict = json.loads(config_file.read())
     if not config_dict:
         sys.stderr.write("[ERROR] Empty config file.\n")
@@ -50,13 +49,20 @@ def load_config(filename):
 
 def run_command(cmd, print_error=True, cwd=None, env=None, shell=False):
     args = shlex.split(cmd) if not shell else cmd
-    proc = sp.Popen(args, stdin=sp.PIPE, stdout=sp.PIPE,
-                    stderr=sp.PIPE, cwd=cwd, env=env, shell=shell)
-    stdout, stderr = proc.communicate()
-    if proc.returncode != 0 and print_error:
+    try:
+        proc = sp.Popen(args, stdin=sp.PIPE, stdout=sp.PIPE,
+                        stderr=sp.PIPE, cwd=cwd, env=env, shell=shell,
+                        encoding="utf-8", universal_newlines=True,
+                        errors="ignore")
+        stdout, stderr = proc.communicate()
+        retcode = proc.returncode
+    except FileNotFoundError:
+        retcode = 2
+        stdout, stderr = "", ""
+    if retcode != 0 and print_error:
         output = stderr if stderr else stdout
         sys.stderr.write("[ERROR] %s\n" % str(output))
-    return proc.returncode, stdout, stderr
+    return retcode, stdout, stderr
 
 
 def count_lines(project, project_dir):
@@ -304,7 +310,8 @@ def check_project(project, project_dir, config, num_jobs):
         project["configurations"] = config.get("configurations",
                                                [{"name": ""}])
     _, skippath = tempfile.mkstemp()
-    with open(skippath, 'w') as skipfile:
+    with open(skippath, 'w', encoding="utf-8", errors="ignore") \
+        as skipfile:
         skipfile.write("\n".join(project.get("skip", [])))
     for run_config in project["configurations"]:
         result_dir = "cc_results"
@@ -312,15 +319,15 @@ def check_project(project, project_dir, config, num_jobs):
             result_dir += "_" + run_config["name"]
         result_path = os.path.join(project_dir, result_dir)
         run_config["result_path"] = result_path
-        args_file, filename = tempfile.mkstemp()
-        if run_config.get("coverage", False):
-            coverage_dir = os.path.join(result_path, "coverage")
-            run_config["coverage_dir"] = coverage_dir
-            os.write(args_file, " -Xclang -analyzer-config "
-                                "-Xclang record-coverage=%s " % coverage_dir)
-        conf_sources = [config["CodeChecker"], project, run_config]
-        os.write(args_file, collect_args("clang_sa_args", conf_sources))
-        os.close(args_file)
+        args_file, filename = tempfile.mkstemp(text=True)
+        with open(args_file, 'w') as args:
+            if run_config.get("coverage", False):
+                coverage_dir = os.path.join(result_path, "coverage")
+                run_config["coverage_dir"] = coverage_dir
+                args.write(" -Xclang -analyzer-config "
+                           "-Xclang record-coverage=%s " % coverage_dir)
+            conf_sources = [config["CodeChecker"], project, run_config]
+            args.write(collect_args("clang_sa_args", conf_sources))
         tag = project.get("tag")
         name = project["name"]
         if tag:
@@ -374,7 +381,8 @@ def process_success(path, statistics=None):
     for name in os.listdir(path):
         if not name.endswith(".txt"):
             continue
-        with open(os.path.join(path, name)) as compiler_output:
+        with open(os.path.join(path, name), encoding="utf-8",
+                  errors="ignore") as compiler_output:
             for line in compiler_output:
                 for _, stat in statistics.items():
                     match = stat.regex.search(line)
@@ -443,7 +451,8 @@ def post_process_project(project, project_dir, config, printer):
             cov_summary = summarize_gcov(cov_result_path)
             cov_summary_path = os.path.join(
                 run_config["result_path"], "coverage.txt")
-            with open(cov_summary_path, "w") as cov_file:
+            with open(cov_summary_path, "w", encoding="utf-8",
+                      errors="ignore") as cov_file:
                 cov_file.write(json.dumps(cov_summary, indent=2))
 
         stats_dir = os.path.join(run_config["result_path"], "success")
@@ -541,7 +550,10 @@ def main():
             build_package(project, project_dir, args.jobs)
         else:
             if not clone_project(project, project_dir, source_dir):
-                shutil.rmtree(project_dir)
+                try:
+                    shutil.rmtree(project_dir)
+                except:
+                    pass
                 continue
             if not log_project(project, source_dir, args.jobs):
                 continue

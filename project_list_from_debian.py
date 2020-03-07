@@ -1,17 +1,11 @@
-#!/usr/bin/env python2
-from __future__ import print_function
-
+#!/usr/bin/env python3
 import argparse as ap
 import gzip
 import json
 import os
 
-try:
-    from urlparse import urljoin
-    from urllib import urlretrieve
-except ImportError:
-    from urllib.parse import urljoin
-    from urllib.request import urlretrieve
+from urllib.parse import urljoin
+from urllib.request import urlretrieve
 
 # TODO:
 #   * Filter packages based on dependencies that are installed
@@ -57,9 +51,11 @@ def main():
                 filename = line[1 + line.rfind(' '):]
 
     result = {"projects": [],
-              "configurations": {
-                  "name": "baseline"
-              },
+              'configurations': [
+                  {
+                    'name': 'baseline'
+                  }
+              ],
               "CodeChecker": {
                   "url": "http://localhost:8001/Default"
               }

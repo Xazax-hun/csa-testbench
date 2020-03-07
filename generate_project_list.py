@@ -1,6 +1,4 @@
-#!/usr/bin/env python2
-from __future__ import print_function
-
+#!/usr/bin/env python3
 import argparse as ap
 import json
 import sys
@@ -76,9 +74,11 @@ def main():
     projects = get_unique_sorted_projects(matches)[:args.n]
 
     output = {'projects': projects,
-              'configurations': {
-                  'name': 'baseline'
-              },
+              'configurations': [
+                  {
+                    'name': 'baseline'
+                  }
+              ],
               'CodeChecker': {
                   'url': 'http://localhost:8001/Default'
               }
