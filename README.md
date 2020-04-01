@@ -97,9 +97,7 @@ In order for this set of scripts to work, [CodeChecker](https://github.com/Erics
 needs to be installed and available in the `PATH`. Packages from the
 `python_requirements` file should also be installed.
 
-These scripts are written in Python 2 for improved compatibility with
-CodeChecker. Once CodeChecker is ported to Python 3, this project will
-follow.
+These scripts are written in Python 3.
 
 If the `cloc` utility is in the path, the script will also count the lines of
 code of the analyzed projects and include it in the final report.
