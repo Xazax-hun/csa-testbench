@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import json
-from cgi import escape
+from html import escape
 from collections import defaultdict
 from datetime import timedelta
 from difflib import SequenceMatcher
