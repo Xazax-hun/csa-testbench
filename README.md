@@ -23,12 +23,12 @@ python generate_project_list.py 'pthread_mutex_t' 'C C++' 5 −−output pthread
 The above command will generate a list of 5 projects written in either C or C++
 that use `pthread_mutex_t`.
 
-Generate Project List from debian packages
+Generate Project List from Debian packages
 ------------------------------------------
 
-It is also possible to create a project list file from debian source packages.
-The resulting file however will contain lots of unsupported projects so it is
-advised to filter the list afterwards. 
+It is also possible to create a project list file from Debian source packages.
+The resulting file will contain lots of unsupported projects, so we
+advise filtering the list afterward.
 
 ```bash
 python project_list_from_debian.py -u ftp://ftp.se.debian.org/debian/ --output debian.json
@@ -95,12 +95,21 @@ Example report:
 
 In order for this set of scripts to work, [CodeChecker](https://github.com/Ericsson/codechecker)
 needs to be installed and available in the `PATH`. Packages from the
-`python_requirements` file should also be installed.
+`python_requirements` file should also be installed after CodeChecker's virtual environment was activated.
+Example setup below:
 
-These scripts are written in Python 3.
+```bash
+cd path/to/CodeChecker
+make venv
+source venv/bin/activate
+make package
+export PATH="$PWD/build/CodeChecker/bin:$PATH"
+cd path/to/csa-testbench
+pip install -r python_requirements
+```
 
 If the `cloc` utility is in the path, the script will also count the lines of
-code of the analyzed projects and include it in the final report.
+code of the analyzed projects and include them in the final report.
 
 If `clang` is compiled with statistics enabled, the scripts will collect and
 include them in the final report.
@@ -108,7 +117,7 @@ include them in the final report.
 If [line based code coverage support is present](https://github.com/Xazax-hun/clang/commit/8428aeb89deb0b61a5d0101dc7fab962be0cf6e8),
 the script can collect coverage data and include it in the final report.
 Note that this requires a patched version of `clang`, this feature is not
-upstreamed yet. For the code coverage collection support to work you need to
+upstreamed yet. For the code coverage collection support to work, you need to
 have the `MergeCoverage.py` script and `gcovr` utility in the `PATH`.
 
 Add the `"coverage": true` line to the configuration in which you want to record the
@@ -241,16 +250,16 @@ configuration should have at least a name.
 * **clang_sa_args**: Arguments passed to `clang` (not `cc1`). The entry under
 `CodeChecker` applies to all projects and is appended to the final list of
 arguments. Entries under the projects apply to each configuration.
-* **analyze_args**: Arguments passed to the `CodeChecker analyze` command. Works
+* **analyze_args**: Arguments passed to the `CodeChecker analyze` command. It works
 the same way as `clang_sa_args`.
 * **analyzers**: Which analyzers to run. Defaults to Clang Static Analyzer only.
-* **store_args**: Arguments passed to the `CodeChecker store` command. Works the
+* **store_args**: Arguments passed to the `CodeChecker store` command. It works the
 same way as `clang_sa_args`.
 * **coverage**: If set to true, precise coverage information will be recorded.
 * **clang_path**: The directory containing the `clang` binaries. This can be
 useful for testing `clang` before and after a patch is applied.
 * **tag**: A commit hash or tag name of a project that will be checked out. It
-can be useful to make the experiments reproducible, i.e. always test with the
+can be useful to make the experiments reproducible, i.e., always test with the
 same code.
 * **configure_command**: If this configuration value is set, the script will
 issue this command before building the project. It will not appear in the build
@@ -276,7 +285,7 @@ project.
 * **package_type**: package manager to build a C++ package.
 [Conan](https://conan.io/) and [vcpkg](https://docs.microsoft.com/en-us/cpp/vcpkg) are supported.
 * **skip**: specify the [skiplist](https://github.com/Ericsson/codechecker/blob/master/docs/user_guide.md#skip)
-for a project. Each element in the list correspond to a line in the generated skiplist file.
+for a project. Each element in the list corresponds to a line in the generated skiplist file.
 
 ### Limitations
 
@@ -317,7 +326,7 @@ It is also great for getting minimal reproducers for assertion fails or crashes 
 Moreover, we can use this tool to get minimal regressions or improvements between two versions of an
 analysis engine.
 
-This section is a small example how to do it for the Clang Static Analyzer. 
+This section is a small example of how to do it for the Clang Static Analyzer.
 
 1. Create the file to reduce
 
