@@ -152,6 +152,13 @@ class HTMLPrinter(object):
             self._generate_charts(stat_html)
             stat_html.write(FOOTER)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.finish()
+
+
     def extend_with_project(self, name, data):
         first = len(self.projects) == 0
         self.projects[name] = data

@@ -538,32 +538,30 @@ def main():
     make_dir(projects_root)
 
     stats_html = os.path.join(projects_root, "stats.html")
-    printer = HTMLPrinter(stats_html, config)
+    with HTMLPrinter(stats_html, config) as printer:
 
-    for project in config['projects']:
-        project_dir = os.path.join(projects_root, project['name'])
-        source_dir = os.path.join(project_dir, project.get('source_dir', ''))
-        package = project.get('package')
-        if package:
-            build_package(project, project_dir, args.jobs)
-        else:
-            if not clone_project(project, project_dir, source_dir):
-                try:
-                    shutil.rmtree(project_dir)
-                except:
-                    pass
-                continue
-            if not log_project(project, source_dir, args.jobs):
-                continue
-        check_project(project, source_dir, config, args.jobs)
-        fatal_errors = post_process_project(project, source_dir, config,
-                                            printer)
-        if fatal_errors > 0 and args.fail_on_assert:
-            logging.error('Stopping after assertion failure.')
-            printer.finish()
-            exit(1)
-
-    printer.finish()
+        for project in config['projects']:
+            project_dir = os.path.join(projects_root, project['name'])
+            source_dir = os.path.join(project_dir,
+                                      project.get('source_dir', ''))
+            package = project.get('package')
+            if package:
+                build_package(project, project_dir, args.jobs)
+            else:
+                if not clone_project(project, project_dir, source_dir):
+                    try:
+                        shutil.rmtree(project_dir)
+                    except:
+                        pass
+                    continue
+                if not log_project(project, source_dir, args.jobs):
+                    continue
+            check_project(project, source_dir, config, args.jobs)
+            fatal_errors = post_process_project(project, source_dir, config,
+                                                printer)
+            if fatal_errors > 0 and args.fail_on_assert:
+                logging.error('Stopping after assertion failure.')
+                exit(1)
 
     logged_projects = check_logged(projects_root, config['projects'])
     logging.info("\nNumber of analyzed projects: %d / %d\n"
