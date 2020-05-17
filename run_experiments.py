@@ -21,8 +21,6 @@ from generate_stat_html import HTMLPrinter
 from summarize_gcov import summarize_gcov
 from summarize_sa_stats import summ_stats
 
-TESTBENCH_ROOT = os.getcwd()
-
 
 def make_dir(path):
     Path(path).mkdir(parents=True, exist_ok=True)
@@ -32,8 +30,7 @@ def timestamp():
     return datetime.now().strftime("%H:%M:%S")
 
 
-def load_config(filename):
-    config_path = os.path.join(TESTBENCH_ROOT, filename)
+def load_config(config_path):
     with open(config_path, "r", encoding="utf-8", errors="ignore") \
         as config_file:
         config_dict = json.loads(config_file.read())
