@@ -17,7 +17,7 @@ that use a certain API or language construct extensively, based on
 Example usage:
 
 ```bash
-python generate_project_list.py 'pthread_mutex_t' 'C C++' 5 −−output pthread.json
+python generate_project_list.py 'pthread_mutex_t' 'C C++' 5 --output pthread.json
 ```
 
 The above command will generate a list of 5 projects written in either C or C++
