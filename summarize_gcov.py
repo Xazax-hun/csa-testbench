@@ -27,7 +27,7 @@ def summarize_gcov(path):
                     if value == "#####":
                         file_missed += 1
                         continue
-                    elif value == "-":
+                    if value == "-":
                         file_noop += 1
                         continue
                     value = int(value)

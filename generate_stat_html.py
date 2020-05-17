@@ -115,7 +115,7 @@ def sort_keys_by_similarity(keys):
 
 
 # FIXME: Escape strings.
-class HTMLPrinter(object):
+class HTMLPrinter:
 
     def __init__(self, path, config):
         self.html_path = path
@@ -157,7 +157,6 @@ class HTMLPrinter(object):
 
     def __exit__(self, type, value, traceback):
         self.finish()
-
 
     def extend_with_project(self, name, data):
         first = len(self.projects) == 0
