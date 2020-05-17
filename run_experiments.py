@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse as ap
 import json
+import logging
 import multiprocessing
 import os
 import re
@@ -26,17 +27,13 @@ def make_dir(path):
     Path(path).mkdir(parents=True, exist_ok=True)
 
 
-def timestamp():
-    return datetime.now().strftime("%H:%M:%S")
-
-
 def load_config(config_path):
     with open(config_path, "r", encoding="utf-8", errors="ignore") \
         as config_file:
         config_dict = json.loads(config_file.read())
     if not config_dict:
-        sys.stderr.write("[ERROR] Empty config file.\n")
-        sys.exit(1)
+        logging.error("Empty config file.")
+        exit(1)
     return config_dict
 
 
@@ -54,7 +51,7 @@ def run_command(cmd, print_error=True, cwd=None, env=None, shell=False):
         stdout, stderr = "", ""
     if retcode != 0 and print_error:
         output = stderr if stderr else stdout
-        sys.stderr.write("[ERROR] %s\n" % str(output))
+        logging.error("%s\n" % str(output))
     return retcode, stdout, stderr
 
 
@@ -67,8 +64,7 @@ def count_lines(project, project_dir):
             project["LOC"] = cloc_json_out["SUM"]["code"]
         except:
             pass
-    print("%s [%s] LOC: %s." % (timestamp(), project['name'],
-                                project.get('LOC', '?')))
+    logging.info("[%s] LOC: %s." % (project['name'], project.get('LOC', '?')))
 
 
 def clone_project(project, project_dir, source_dir, is_subproject=False):
@@ -87,8 +83,7 @@ def clone_project(project, project_dir, source_dir, is_subproject=False):
         shutil.rmtree(project_dir)
 
     project_str = "subproject" if is_subproject else "project"
-    print("%s [%s] Checking out %s... " % (timestamp(), project['name'],
-                                           project_str))
+    logging.info("[%s] Checking out %s... " % (project['name'], project_str))
 
     # Check if tarball is provided.
     # TODO: support zip files.
@@ -167,7 +162,7 @@ def identify_build_system(project_dir, configure):
 
     project_files = os.listdir(project_dir)
     if not project_files:
-        sys.stderr.write("[ERROR] No files found in '%s'.\n" % project_dir)
+        logging.error("No files found in '%s'.\n" % project_dir)
         return None
 
     if 'CMakeLists.txt' in project_files:
@@ -196,7 +191,7 @@ def identify_build_system(project_dir, configure):
             return None
         return 'makefile'
 
-    sys.stderr.write("[ERROR] Build system cannot be identified.\n")
+    logging.error("Build system cannot be identified.\n")
     return None
 
 
@@ -240,7 +235,7 @@ def log_project(project, project_dir, num_jobs):
         build_sys = identify_build_system(project_dir, configure)
     failed = not build_sys
 
-    print("%s [%s] Generating build log... " % (timestamp(), project['name']))
+    logging.info("[%s] Generating build log... " % project['name'])
     json_path, binary_dir = get_compilation_database(project, project_dir)
     if build_sys == 'cmake':
         cmd = 'cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B"%s" -H"%s"' \
@@ -276,7 +271,7 @@ def update_path(path, env=None):
 
 
 def build_package(project, project_dir, jobs):
-    print("%s [%s] Generating build log... " % (timestamp(), project['name']))
+    logging.info("[%s] Generating build log... " % project['name'])
     make_dir(project_dir)
     json_path, _ = get_compilation_database(project, project_dir)
     if project["package_type"] == "vcpkg":
@@ -291,7 +286,7 @@ def build_package(project, project_dir, jobs):
             % (project["package"], json_path)
         failed, _, _ = run_command(cmd, True, project_dir)
         return not failed
-    print("%s [%s] Unsupported package." % (timestamp(), project['name']))
+    logging.info("[%s] Unsupported package." % project['name'])
     return False
 
 
@@ -329,8 +324,7 @@ def check_project(project, project_dir, config, num_jobs):
             name += "_" + run_config["name"]
         run_config["full_name"] = name
 
-        print("%s [%s] Analyzing project... " % (timestamp(), name))
-        sys.stdout.flush()
+        logging.info("[%s] Analyzing project... " % name)
         env = None
         if "clang_path" in run_config:
             env = update_path(run_config["clang_path"])
@@ -345,14 +339,14 @@ def check_project(project, project_dir, config, num_jobs):
         cmd += collect_args("analyze_args", conf_sources)
         run_command(cmd, print_error=True, env=env)
 
-        print("%s [%s] Done. Storing results..." % (timestamp(), name))
+        logging.info("[%s] Done. Storing results..." % name)
         cmd = "CodeChecker store '%s' --url '%s' -n %s " \
               % (result_path, config["CodeChecker"]["url"], name)
         if tag:
             cmd += " --tag %s " % tag
         cmd += collect_args("store_args", conf_sources)
         run_command(cmd, print_error=True, env=env)
-        print("%s [%s] Results stored." % (timestamp(), name))
+        logging.info("[%s] Results stored." % name)
 
     os.remove(skippath)
 
@@ -432,7 +426,7 @@ def post_process_project(project, project_dir, config, printer):
                 run_command("MergeCoverage.py -i '%s' -o '%s'" %
                             (run_config["coverage_dir"], cov_result_path))
             except OSError:
-                print("[Warning] MergeCoverage.py is not found in path.")
+                logging.warning("MergeCoverage.py is not found in path.")
             cov_result_html = os.path.join(
                 run_config["result_path"], "coverage.html")
             try:
@@ -440,7 +434,7 @@ def post_process_project(project, project_dir, config, printer):
                     "gcovr -k -g '%s' --html --html-details -r '%s' -o '%s'" %
                     (cov_result_path, project_dir, cov_result_html))
             except OSError:
-                print("[Warning] gcovr is not found in path.")
+                logging.warning("gcovr is not found in path.")
             cov_summary = summarize_gcov(cov_result_path)
             cov_summary_path = os.path.join(
                 run_config["result_path"], "coverage.txt")
@@ -497,11 +491,13 @@ def post_process_project(project, project_dir, config, printer):
         project_stats[run_config["name"]] = stats
 
     printer.extend_with_project(project["name"], project_stats)
-    print("%s [%s] Postprocessed." % (timestamp(), project['name']))
+    logging.info("[%s] Postprocessed." % project['name'])
     return fatal_errors
 
 
 def main():
+    logging.basicConfig(format='%(asctime)s (%(levelname)s) %(message)s',
+                        datefmt='%H:%M:%S', level=logging.INFO)
     parser = ap.ArgumentParser(description="Run differential analysis "
                                "experiment on a set of projects.",
                                formatter_class=ap.RawTextHelpFormatter)
@@ -521,23 +517,22 @@ def main():
     args = parser.parse_args()
 
     try:
-        _, out, _ = run_command("CodeChecker version")
+        _, cc_ver, _ = run_command("CodeChecker version")
     except OSError:
-        sys.stderr.write(
-            "[ERROR] CodeChecker is not available as a command.\n")
-        sys.exit(1)
+        logging.error("CodeChecker is not available as a command.")
+        exit(1)
 
     if args.jobs < 1:
-        sys.stderr.write("[ERROR] Invalid number of jobs.\n")
+        logging.error("Invalid number of jobs.")
 
-    print("Using configuration file '%s'." % args.config)
+    logging.info("Using configuration file '%s'." % args.config)
     config = load_config(args.config)
+    config["CodeChecker version"] = cc_ver
     script_dir = os.path.dirname(os.path.realpath(__file__))
-    config["CodeChecker version"] = out
     _, out, _ = run_command("git rev-parse HEAD", False, cwd=script_dir)
     config["Script version"] = out
     config["Script args"] = " ".join(sys.argv)
-    print("Number of projects to process: %d.\n" % len(config['projects']))
+    logging.info("Number of projects to process: %d.\n" % len(config['projects']))
 
     projects_root = os.path.abspath(args.output)
     make_dir(projects_root)
@@ -564,17 +559,18 @@ def main():
         fatal_errors = post_process_project(project, source_dir, config,
                                             printer)
         if fatal_errors > 0 and args.fail_on_assert:
-            print('Stopping after assertion failure.')
+            logging.error('Stopping after assertion failure.')
             printer.finish()
             exit(1)
 
     printer.finish()
 
     logged_projects = check_logged(projects_root, config['projects'])
-    print("\nNumber of analyzed projects: %d / %d"
-          % (logged_projects, len(config['projects'])))
-    print("Results can be viewed at '%s'." % config['CodeChecker']['url'])
-    print("Stats can be viewed at '%s'." % stats_html)
+    logging.info("\nNumber of analyzed projects: %d / %d\n"
+                 "Results can be viewed at '%s'.\n"
+                 "Stats can be viewed at 'file://%s'."
+                 % (logged_projects, len(config['projects']),
+                    config['CodeChecker']['url'], stats_html))
 
 
 if __name__ == '__main__':
