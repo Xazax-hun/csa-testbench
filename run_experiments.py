@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import argparse as ap
-import errno
 import json
 import multiprocessing
 import os
@@ -15,6 +14,7 @@ import zipfile
 from collections import Counter
 from datetime import datetime, timedelta
 from distutils.dir_util import copy_tree
+from pathlib import Path
 from urllib.request import urlretrieve
 
 from generate_stat_html import HTMLPrinter
@@ -25,11 +25,7 @@ TESTBENCH_ROOT = os.getcwd()
 
 
 def make_dir(path):
-    try:
-        os.makedirs(path)
-    except OSError as ex:
-        if ex.errno != errno.EEXIST:
-            raise
+    Path(path).mkdir(parents=True, exist_ok=True)
 
 
 def timestamp():
