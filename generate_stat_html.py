@@ -32,7 +32,7 @@ HEADER = """
           integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
           crossorigin="anonymous"></script>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-  <script type="text/javascript">
+  <script>
       // Reload Poltly graphs on tab change.
       $(document).ready(function () {
           $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
@@ -41,7 +41,6 @@ HEADER = """
               var toAppend = [];
               $(target).find("SCRIPT").each(function (index, element) {
                   var script = document.createElement('script');
-                  script.type = 'text/javascript';
                   script.text = element.text
                   toRemove.push(element);
                   toAppend.push(script);
@@ -72,7 +71,7 @@ HEADER = """
 FOOTER = """
 </div>
 </div>
-<footer>
+<footer class="page-footer">
   <div class="container-fluid bg-light p-3 mb-2">
     <span class="text-muted">This report is created by the
       <a href="https://github.com/Xazax-hun/csa-testbench">CSA-Testbench</a> toolset.</span>
@@ -90,11 +89,11 @@ def longest_match(a, b):
 
 def sort_keys_by_similarity(keys):
     """
-    Sort keys by simialrity. This is an approximation of the
+    Sort keys by similarity. This is an approximation of the
     optimal order. For each insertion to an intermediate list we
     calculate a score and choose the best insertion. The score also
     have a penalty part if the insertion reduces the similarity of
-    the neighbours.
+    the neighbors.
     """
     result = []
     for key in keys:
@@ -137,7 +136,7 @@ class HTMLPrinter(object):
                 text = '<a class="nav-item nav-link {0}" id="nav-{1}-tab"' \
                        ' data-toggle="tab" href="#nav-{1}" role="tab"' \
                        ' aria-controls="nav-{1}" aria-selected="{2}">{1}</a>' \
-                    .format(active, name, active != "")
+                    .format(active, name, "true" if active != "" else "false")
                 stat_html.write(text)
                 active = ""
             text = '<a class="nav-item nav-link" id="nav-charts-tab"' \
