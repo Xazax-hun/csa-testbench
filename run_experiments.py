@@ -15,6 +15,7 @@ import zipfile
 from collections import Counter
 from datetime import datetime, timedelta
 from distutils.dir_util import copy_tree
+from io import TextIOWrapper
 from pathlib import Path
 from urllib.request import urlretrieve
 
@@ -397,7 +398,7 @@ def process_failures(path, statistics=None):
         full_path = os.path.join(path, name)
         with zipfile.ZipFile(full_path) as archive, \
                 archive.open("stderr") as stderr:
-            for line in stderr:
+            for line in TextIOWrapper(stderr, 'utf-8'):
                 for _, stat in statistics.items():
                     match = stat.regex.search(line)
                     if match:
