@@ -76,7 +76,7 @@ def clone_project(project, project_dir, source_dir, is_subproject=False):
 
     If a project already exists, we simply overwrite it.
     """
-    if 'prepared' in project:
+    if project.get('prepared', False):
         count_lines(project, project_dir)
         return True
 
@@ -140,6 +140,12 @@ def clone_project(project, project_dir, source_dir, is_subproject=False):
     for sub_project in project.get("subprojects", []):
         sub_dir = os.path.join(source_dir, sub_project["subdir"])
         if not clone_project(sub_project, sub_dir, sub_dir, True):
+            return False
+
+    if project.get('submodules', False):
+        submodule_failed, _, _ = run_command('git submodule update --init',
+                                             cwd=project_dir)
+        if submodule_failed:
             return False
 
     if not is_subproject:

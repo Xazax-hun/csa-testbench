@@ -274,11 +274,13 @@ be relative to the project root. Currently, this is only supported for `cmake`
 projects.
 * **source_dir**: If the source code and the related build files of the project
 are not in the project root, this directory can specify the location.
-* **prepared**: If this configuration value is specified, the script will not
+* **prepared**: If this configuration value is set to `true`, the script will not
 attempt to check out the project and will not attempt to create a build log.
 It will assume that a folder with the name of the project exists and contains a
 `compile_commands.json` file. It will use that file for the analysis of the
 project.
+* **submodules**: If this configuration value is set to `true`, the script will
+also initialize submodules after checking the repository out.
 * **charts**: The list of statistics that should be charted.
 * **subprojects**: List of other repositories to check out before building into the
 **subdir** directory.
