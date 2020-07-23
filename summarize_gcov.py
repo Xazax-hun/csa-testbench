@@ -4,7 +4,7 @@ import os
 import sys
 
 
-def summarize_gcov(path):
+def summarize_gcov(path: str):
     summary = {}
     overall_sum = 0
     overall_missed = 0

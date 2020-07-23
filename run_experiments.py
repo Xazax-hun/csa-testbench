@@ -13,10 +13,11 @@ import tarfile
 import tempfile
 import zipfile
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import timedelta
 from distutils.dir_util import copy_tree
 from io import TextIOWrapper
 from pathlib import Path
+from typing import Mapping, Optional, Sequence, Tuple, Union
 from urllib.request import urlretrieve
 
 from generate_stat_html import HTMLPrinter
@@ -24,13 +25,13 @@ from summarize_gcov import summarize_gcov
 from summarize_sa_stats import summ_stats
 
 
-def make_dir(path):
+def make_dir(path: str) -> None:
     Path(path).mkdir(parents=True, exist_ok=True)
 
 
-def load_config(config_path):
+def load_config(config_path: str) -> dict:
     with open(config_path, "r", encoding="utf-8", errors="ignore") \
-        as config_file:
+            as config_file:
         config_dict = json.loads(config_file.read())
     if not config_dict:
         logging.error("Empty config file.")
@@ -38,7 +39,10 @@ def load_config(config_path):
     return config_dict
 
 
-def run_command(cmd, print_error=True, cwd=None, env=None, shell=False):
+def run_command(cmd: Union[str, Sequence[str]], print_error: bool = True,
+                cwd: Optional[str] = None,
+                env: Optional[Mapping[str, str]] = None,
+                shell: bool = False) -> Tuple[int, str, str]:
     args = shlex.split(cmd) if not shell else cmd
     try:
         proc = sp.Popen(args, stdin=sp.PIPE, stdout=sp.PIPE,
@@ -56,7 +60,7 @@ def run_command(cmd, print_error=True, cwd=None, env=None, shell=False):
     return retcode, stdout, stderr
 
 
-def count_lines(project, project_dir):
+def count_lines(project: dict, project_dir: str) -> None:
     failed, stdout, _ = run_command(
         'cloc "%s" --json --not-match-d="cc_results"' % project_dir, False)
     if not failed:
@@ -68,7 +72,8 @@ def count_lines(project, project_dir):
     logging.info("[%s] LOC: %s.", project['name'], project.get('LOC', '?'))
 
 
-def clone_project(project, project_dir, source_dir, is_subproject=False):
+def clone_project(project: dict, project_dir: str, source_dir: str,
+                  is_subproject: bool = False) -> bool:
     """Clone a single project.
 
     Its version is specified by a version tag or a commit hash
@@ -154,7 +159,7 @@ def clone_project(project, project_dir, source_dir, is_subproject=False):
     return True
 
 
-def identify_build_system(project_dir, configure):
+def identify_build_system(project_dir: str, configure: bool) -> Optional[str]:
     """Identifies the build system of a project.
 
     Used heuristics:
@@ -202,13 +207,13 @@ def identify_build_system(project_dir, configure):
     return None
 
 
-def check_logged(projects_root, projects):
+def check_logged(projects_root: str, projects: Sequence[dict]) -> int:
     """ Count successfully checked projects."""
 
     configured_projects = {project["name"] for project in projects}
-    projects = os.listdir(projects_root)
+    project_dirs = os.listdir(projects_root)
     num = 0
-    for project in projects:
+    for project in project_dirs:
         if os.path.isfile(os.path.join(projects_root, project)):
             continue
         if project not in configured_projects:
@@ -217,7 +222,8 @@ def check_logged(projects_root, projects):
     return num
 
 
-def get_compilation_database(project, project_dir):
+def get_compilation_database(project: dict,
+                             project_dir: str)  -> Tuple[str, str]:
     binary_dir = project_dir
     if "binary_dir" in project:
         binary_dir = os.path.join(binary_dir, project["binary_dir"])
@@ -226,7 +232,7 @@ def get_compilation_database(project, project_dir):
     return json_path, binary_dir
 
 
-def log_project(project, project_dir, num_jobs):
+def log_project(project: dict, project_dir: str, num_jobs: int) -> bool:
     if 'prepared' in project:
         return True
     configure = True
@@ -265,19 +271,20 @@ def log_project(project, project_dir, num_jobs):
     return True
 
 
-def collect_args(arg_name, configuration_sources):
-    return " ".join([conf[arg_name] if arg_name in conf else ""
+def collect_args(arg_name: str, configuration_sources: Sequence[dict]) -> str:
+    return " ".join([conf.get(arg_name, "")
                      for conf in configuration_sources])
 
 
-def update_path(path, env=None):
+def update_path(path: str, env: Optional[Mapping[str, str]] = None) \
+    -> Mapping[str, str]:
     if env is None:
         env = os.environ
     env["PATH"] = path + ":" + env["PATH"]
     return env
 
 
-def build_package(project, project_dir, jobs):
+def build_package(project: dict, project_dir: str, jobs: int) -> bool:
     logging.info("[%s] Generating build log... ", project['name'])
     make_dir(project_dir)
     json_path, _ = get_compilation_database(project, project_dir)
@@ -297,7 +304,8 @@ def build_package(project, project_dir, jobs):
     return False
 
 
-def check_project(project, project_dir, config, num_jobs):
+def check_project(project: dict, project_dir: str, config: dict,
+                  num_jobs: int) -> None:
     """Analyze project and store the results with CodeChecker."""
 
     json_path, _ = get_compilation_database(project, project_dir)
@@ -306,7 +314,7 @@ def check_project(project, project_dir, config, num_jobs):
                                                [{"name": ""}])
     _, skippath = tempfile.mkstemp()
     with open(skippath, 'w', encoding="utf-8", errors="ignore") \
-        as skipfile:
+            as skipfile:
         skipfile.write("\n".join(project.get("skip", [])))
     for run_config in project["configurations"]:
         result_dir = "cc_results"
@@ -359,12 +367,12 @@ def check_project(project, project_dir, config, num_jobs):
 
 
 class RegexStat:
-    def __init__(self, regex):
+    def __init__(self, regex: str):
         self.regex = re.compile(regex)
         self.counter = Counter()
 
 
-def process_success(path, statistics=None):
+def process_success(path: str, statistics: Optional[dict] = None) -> dict:
     if statistics is None:
         statistics = dict()
     statistics.update({
@@ -385,7 +393,8 @@ def process_success(path, statistics=None):
     return statistics
 
 
-def process_failures(path, statistics=None):
+def process_failures(path: str, statistics: Optional[dict] = None) \
+    -> Tuple[int, dict]:
     if statistics is None:
         statistics = dict()
     statistics.update({
@@ -413,11 +422,12 @@ def process_failures(path, statistics=None):
     return failures, statistics
 
 
-def create_link(url, text):
+def create_link(url: str, text: str) -> str:
     return '<a href="%s">%s</a>' % (url, text)
 
 
-def post_process_project(project, project_dir, config, printer):
+def post_process_project(project: dict, project_dir: str, config: dict,
+                         printer: HTMLPrinter) -> int:
     _, stdout, _ = run_command(
         "CodeChecker cmd runs --url %s -o json" % config['CodeChecker']['url'])
     runs = json.loads(stdout)
@@ -485,7 +495,7 @@ def post_process_project(project, project_dir, config, printer):
                 top = ["%s [%d]" % x for x in stat.counter.most_common(5)]
                 stats["Top %s" % name] = "<br>\n".join(top)
         fatal_errors += sum(failure_stats["assertions"].counter.values()) + \
-                        sum(failure_stats["unreachable"].counter.values())
+            sum(failure_stats["unreachable"].counter.values())
         stats["Lines of code"] = project.get("LOC", '?')
 
         disk_usage = 0
@@ -539,7 +549,8 @@ def main():
     _, out, _ = run_command("git rev-parse HEAD", False, cwd=script_dir)
     config["Script version"] = out
     config["Script args"] = " ".join(sys.argv)
-    logging.info("Number of projects to process: %d.\n", len(config['projects']))
+    logging.info("Number of projects to process: %d.\n",
+                 len(config['projects']))
 
     projects_root = os.path.abspath(args.output)
     make_dir(projects_root)

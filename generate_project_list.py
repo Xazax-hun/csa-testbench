@@ -2,21 +2,22 @@
 import argparse as ap
 import json
 import sys
+from typing import Sequence
 
 import requests
 
 LANG_CODES = {'c': 28, 'c++': 16, 'objectivec': 21, 'objectivec++': 35}
 
 
-def create_query_dict(pattern, langs, page):
+def create_query_dict(pattern: str, langs: str, page: int) -> dict:
     call_dict = {'q': pattern, 'src': 2, 'per_page': 100, 'p': page}
-    langs = [LANG_CODES[item.replace('-', '').lower()]
+    lang_codes = [LANG_CODES[item.replace('-', '').lower()]
              for item in langs.split()]
-    call_dict.update({'lan': langs})
+    call_dict.update({'lan': lang_codes})
     return call_dict
 
 
-def get_unique_sorted_projects(matches):
+def get_unique_sorted_projects(matches: Sequence[dict]) -> list:
     projects = {}
     for match in matches:
         if match['url'] not in projects:

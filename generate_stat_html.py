@@ -4,6 +4,7 @@ from html import escape
 from collections import defaultdict
 from datetime import timedelta
 from difflib import SequenceMatcher
+from typing import IO, List, Sequence
 
 try:
     import plotly.offline as py
@@ -82,12 +83,12 @@ FOOTER = """
 """
 
 
-def longest_match(a, b):
+def longest_match(a: Sequence, b: Sequence) -> int:
     return SequenceMatcher(None, a, b).\
         find_longest_match(0, len(a), 0, len(b)).size
 
 
-def sort_keys_by_similarity(keys):
+def sort_keys_by_similarity(keys: Sequence[str]) -> List[str]:
     """
     Sort keys by similarity. This is an approximation of the
     optimal order. For each insertion to an intermediate list we
@@ -117,7 +118,7 @@ def sort_keys_by_similarity(keys):
 # FIXME: Escape strings.
 class HTMLPrinter:
 
-    def __init__(self, path, config):
+    def __init__(self, path: str, config: dict):
         self.html_path = path
         self.charts = config.get("charts", ["Duration", "Result count"])
         self.excludes = ["TU times"]
@@ -147,7 +148,7 @@ class HTMLPrinter:
             stat_html.write('</div>\n</nav>\n')
             stat_html.write('<div class="tab-content" id="nav-tabContent">\n')
 
-    def finish(self):
+    def finish(self) -> None:
         with open(self.html_path, 'a') as stat_html:
             self._generate_charts(stat_html)
             stat_html.write(FOOTER)
@@ -158,7 +159,7 @@ class HTMLPrinter:
     def __exit__(self, type, value, traceback):
         self.finish()
 
-    def extend_with_project(self, name, data):
+    def extend_with_project(self, name: str, data: dict) -> None:
         first = len(self.projects) == 0
         self.projects[name] = data
         stat_html = open(self.html_path, 'a')
@@ -210,7 +211,8 @@ class HTMLPrinter:
         stat_html.close()
 
     @staticmethod
-    def _generate_time_histogram(stat_html, configurations, data):
+    def _generate_time_histogram(stat_html: IO, configurations: set,
+                                 data: dict) -> None:
         if not CHARTS_SUPPORTED:
             return
         traces = []
@@ -229,7 +231,7 @@ class HTMLPrinter:
         stat_html.write("<h3>Time per TU histogram</h3>\n")
         stat_html.write(div)
 
-    def _generate_charts(self, stat_html):
+    def _generate_charts(self, stat_html: IO) -> None:
         stat_html.write('<div class="tab-pane fade" id="nav-charts"'
                         ' role="tabpanel" aria-labelledby="nav-charts-tab">\n')
         if not CHARTS_SUPPORTED:

@@ -6,9 +6,10 @@ import sys
 from collections import defaultdict
 from enum import Enum
 from math import floor, log10
+from typing import Sequence
 
 
-def dice_coefficient(a, b):
+def dice_coefficient(a: Sequence, b: Sequence) -> float:
     if not a or not b:
         return 0.0
     # Quick case for true duplicates.
@@ -48,13 +49,14 @@ class StatType(Enum):
     MAX = 'maximum'
 
 
-def summ_stats(path, verbose=True):
+def summ_stats(path: str, verbose: bool = True) -> dict:
     stat_map = defaultdict(int)
     per_helper = defaultdict(int)
     group = {}
     if os.path.isdir(path):
         for stat_file in os.listdir(path):
-            summ_stats_on_file(os.path.join(path, stat_file), stat_map, per_helper, group)
+            summ_stats_on_file(os.path.join(path, stat_file),
+                               stat_map, per_helper, group)
     elif os.path.isfile(path):
         summ_stats_on_file(path, stat_map, per_helper, group)
     else:
@@ -76,12 +78,14 @@ def summ_stats(path, verbose=True):
     return stat_map
 
 
-def summ_stats_on_file(filename, stat_map, per_helper, group):
+def summ_stats_on_file(filename: str, stat_map: dict, per_helper: dict,
+                       group: dict) -> None:
     type_pattern = ''
     for t in StatType:
         type_pattern += t.value + '|'
     type_pattern = type_pattern[:-1]
-    stat_pattern = re.compile(r"([0-9]+(?:\.[0-9]+)?) (.+) - (The (" + type_pattern + r") .+)")
+    stat_pattern = re.compile(
+        r"([0-9]+(?:\.[0-9]+)?) (.+) - (The (" + type_pattern + r") .+)")
     timer_pattern = re.compile(r".+\(.+\).+\(.+\).+\(.+\)(.+)\(.+\).+analyzer total time",
                                re.IGNORECASE)
     act_nums = {}
@@ -117,12 +121,15 @@ def summ_stats_on_file(filename, stat_map, per_helper, group):
             is_in_stat_block = False
             for key, val in per_to_update.items():
                 # Find the most similar # stat.
-                num_data = max(act_nums.keys(), key=(lambda x: dice_coefficient(x, key)))
+                num_data = max(act_nums.keys(), key=(
+                    lambda x: dice_coefficient(x, key)))
                 per_helper[num_data] += int(act_nums[num_data] * float(val))
                 # Check for consistency.
-                assert not (key in per_to_num_map and per_to_num_map[key] != num_data)
+                assert not (
+                    key in per_to_num_map and per_to_num_map[key] != num_data)
                 per_to_num_map[key] = num_data
-                stat_map[key] = floor(per_helper[num_data]) / stat_map[num_data]
+                stat_map[key] = floor(
+                    per_helper[num_data]) / stat_map[num_data]
             act_nums = {}
 
 
