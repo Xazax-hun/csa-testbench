@@ -269,6 +269,8 @@ will be replaced with the number of jobs specified in the command line.
 to infer the build system, but will invoke the `make` command specified in this
 value. The working directory will be the root of the project. The string `$JOBS`
 will be replaced with the number of jobs specified in the command line.
+If this configuration value is set, but to an empty string, then no build
+invocation will happen.
 * **binary_dir**: The binary dir can be specified for out-of-tree builds. It can
 be relative to the project root. Currently, this is only supported for `cmake`
 projects.

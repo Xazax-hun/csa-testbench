@@ -259,11 +259,14 @@ def log_project(project: dict, project_dir: str, num_jobs: int) -> bool:
               % (num_jobs, json_path)
         failed, _, _ = run_command(cmd, True, project_dir)
     elif build_sys == 'userprovided':
-        project['make_command'] = \
-            project['make_command'].replace("$JOBS", str(num_jobs))
-        cmd = "CodeChecker log -b '%s' -o \"%s\"" \
-              % (project['make_command'], json_path)
-        failed, _, _ = run_command(cmd, True, project_dir, shell=True)
+        if not project['make_command']:
+            logging.info("[%s] 'make_command' is empty. Command invocation skipped.", project['name'])
+        else:
+            project['make_command'] = \
+                project['make_command'].replace("$JOBS", str(num_jobs))
+            cmd = "CodeChecker log -b '%s' -o \"%s\"" \
+                  % (project['make_command'], json_path)
+            failed, _, _ = run_command(cmd, True, project_dir, shell=True)
     if failed:
         shutil.rmtree(project_dir)
         return False
