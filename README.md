@@ -143,9 +143,10 @@ Example coverage report:
 
 ### Configuration
 
-A minimal configuration should contain a list of projects and a CodeChecker URL.
+A minimal configuration should contain a list of projects.
 Each project should at least contain a git or tarball URL and a name. Other
-configuration values are optional.
+configuration values are optional. Note that if CodeChecker URL is missing,
+the reports will not be uploaded/stored anywhere.
 
 ```json
 {

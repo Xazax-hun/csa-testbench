@@ -358,13 +358,17 @@ def check_project(project: dict, project_dir: str, config: dict,
         run_command(cmd, print_error=True, env=env)
 
         logging.info("[%s] Done. Storing results...", name)
-        cmd = "CodeChecker store '%s' --url '%s' -n %s " \
-              % (result_path, config["CodeChecker"]["url"], name)
-        if tag:
-            cmd += " --tag %s " % tag
-        cmd += collect_args("store_args", conf_sources)
-        run_command(cmd, print_error=True, env=env)
-        logging.info("[%s] Results stored.", name)
+        if config["CodeChecker"]["url"]:
+            cmd = "CodeChecker store '%s' --url '%s' -n %s " \
+                  % (result_path, config["CodeChecker"]["url"], name)
+            if tag:
+                cmd += " --tag %s " % tag
+            cmd += collect_args("store_args", conf_sources)
+            run_command(cmd, print_error=True, env=env)
+            logging.info("[%s] Results stored.", name)
+        else:
+            logging.info(
+                "[%s] Storing was skipped. There is no CodeChecker url.", name)
 
     os.remove(skippath)
 
@@ -578,6 +582,11 @@ def main():
                 if not log_project(project, source_dir, args.jobs):
                     continue
             check_project(project, source_dir, config, args.jobs)
+
+            if not config["CodeChecker"]["url"]:
+                logging.info("[%s] Postprocessing was skipped. "
+                             "There is no CodeChecker url.")
+                continue
             fatal_errors = post_process_project(project, source_dir, config,
                                                 printer)
             if fatal_errors > 0 and args.fail_on_assert:
