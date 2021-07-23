@@ -32,7 +32,7 @@ def make_dir(path: str) -> None:
 def load_config(config_path: str) -> dict:
     with open(config_path, "r", encoding="utf-8", errors="ignore") \
             as config_file:
-        config_dict = json.loads(config_file.read())
+        config_dict = json.loads(config_file.read(), strict=False)
     if not config_dict:
         logging.error("Empty config file.")
         sys.exit(1)
