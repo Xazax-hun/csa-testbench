@@ -92,8 +92,12 @@
     },
     {
       "name": "with_stats",
-      "clang_sa_args": "-Xclang -analyzer-stats"
+      "clang_sa_args": "-Xclang -analyzer-stats -fproc-stat-report"
     }
+  ],
+  "charts": [
+      "Duration",
+      "Peak memory usage"
   ],
   "CodeChecker": {
     "url": "http://localhost:8001/Default",

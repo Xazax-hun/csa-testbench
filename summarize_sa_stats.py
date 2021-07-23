@@ -88,6 +88,8 @@ def summ_stats_on_file(filename: str, stat_map: dict, per_helper: dict,
         r"([0-9]+(?:\.[0-9]+)?) (.+) - (The (" + type_pattern + r") .+)")
     timer_pattern = re.compile(r".+\(.+\).+\(.+\).+\(.+\)(.+)\(.+\).+analyzer total time",
                                re.IGNORECASE)
+    memory_pattern = re.compile(r"mem=([0-9]+) Kb")
+
     act_nums = {}
     per_to_num_map = {}
     per_to_update = {}
@@ -95,6 +97,12 @@ def summ_stats_on_file(filename: str, stat_map: dict, per_helper: dict,
     f = open(filename)
     lines = f.readlines()
     for line in lines:
+        m = memory_pattern.search(line)
+        if m:
+            stat_val = int(m.group(1).strip())
+            stat_name = "Peak memory usage"
+            stat_map[stat_name] = max(stat_map[stat_name], int(stat_val))
+            continue
         m = timer_pattern.search(line)
         if m:
             val = float(m.group(1).strip())
@@ -102,6 +110,7 @@ def summ_stats_on_file(filename: str, stat_map: dict, per_helper: dict,
                 stat_map["TU times"].append(val)
             else:
                 stat_map["TU times"] = [val]
+            continue
         m = stat_pattern.search(line)
         if m:
             is_in_stat_block = True
