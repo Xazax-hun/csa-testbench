@@ -87,6 +87,7 @@
       "name": "original",
       "baseline": true,
       "clang_sa_args": "",
+      "clang_tidy_args": "",
       "analyze_args": "",
       "store_args": ""
     },

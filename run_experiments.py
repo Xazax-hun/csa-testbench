@@ -334,6 +334,12 @@ def check_project(project: dict, project_dir: str, config: dict,
                            "-Xclang record-coverage=%s " % coverage_dir)
             conf_sources = [config["CodeChecker"], project, run_config]
             args.write(collect_args("clang_sa_args", conf_sources))
+
+        tidy_args_file, tidy_args_filename = tempfile.mkstemp(text=True)
+        with open(tidy_args_file, 'w') as args:
+            conf_sources = [config["CodeChecker"], project, run_config]
+            args.write(collect_args("clang_tidy_args", conf_sources))
+
         tag = project.get("tag")
         name = project["name"]
         if tag:
@@ -353,6 +359,7 @@ def check_project(project: dict, project_dir: str, config: dict,
                "--analyzers %s --capture-analysis-output") \
             % (json_path, num_jobs, result_path, analyzers)
         cmd += " --saargs %s " % filename
+        cmd += " --tidyargs %s " % tidy_args_filename
         cmd += " --skip %s " % skippath
         cmd += collect_args("analyze_args", conf_sources)
         run_command(cmd, print_error=True, env=env)

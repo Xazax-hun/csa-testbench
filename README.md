@@ -220,6 +220,7 @@ configuration values are optional.
     {
       "name": "original",
       "clang_sa_args": "",
+      "clang_tidy_args": "",
       "analyze_args": "",
       "store_args": "",
       "clang_path": ""
