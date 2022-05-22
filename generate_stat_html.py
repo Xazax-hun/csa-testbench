@@ -126,8 +126,11 @@ class HTMLPrinter:
         self.projects = {}
         with open(self.html_path, 'w') as stat_html:
             stat_html.write(HEADER)
-            stat_html.write("<!-- %s -->\n" %
-                            escape(json.dumps(config)))
+            try:
+                stat_html.write("<!-- %s -->\n" %
+                                escape(json.dumps(config)))
+            except Exception:
+                stat_html.write("<!-- JSON encoding of config failed -->\n")
             # Generate nav bar.
             stat_html.write('<nav>\n<div class="nav nav-tabs" '
                             'id="nav-tab" role="tablist">\n')
@@ -159,7 +162,8 @@ class HTMLPrinter:
     def __exit__(self, type, value, traceback):
         self.finish()
 
-    def extend_with_project(self, name: str, data: dict) -> None:
+    def extend_with_project(self, name: str, data: dict,
+                            extra_charts: dict) -> None:
         first = len(self.projects) == 0
         self.projects[name] = data
         stat_html = open(self.html_path, 'a')
@@ -207,6 +211,16 @@ class HTMLPrinter:
                                 (escape(conf), escape(stat_name), escape(val)))
 
         HTMLPrinter._generate_time_histogram(stat_html, configurations, data)
+
+        # Write additional charts.
+        if extra_charts:
+            stat_html.write("<h2>Project-specific charts</h2>")
+            for title, figure in extra_charts.items():
+                div = py.plot(figure, show_link=False, include_plotlyjs=False,
+                              output_type='div', auto_open=False)
+                stat_html.write("<h3>%s</h3>" % escape(title))
+                stat_html.write(div)
+
         stat_html.write('</div>\n')
         stat_html.close()
 
