@@ -279,6 +279,20 @@ def collect_args(arg_name: str, configuration_sources: Sequence[dict]) -> str:
                      for conf in configuration_sources])
 
 
+def make_args_file(args: str) -> Tuple[int, str]:
+    """
+    Creates a temporary file containing the argument string ``args``, if
+    and only if non-empty.
+    """
+    if not args:
+        return 0, ""
+
+    file, filename = tempfile.mkstemp(text=True)
+    with open(file, 'w') as handle:
+        handle.write(args)
+    return file, str(filename)
+
+
 def update_path(path: str, env: Optional[Mapping[str, str]] = None) \
     -> Mapping[str, str]:
     if env is None:
@@ -325,20 +339,18 @@ def check_project(project: dict, project_dir: str, config: dict,
             result_dir += "_" + run_config["name"]
         result_path = os.path.join(project_dir, result_dir)
         run_config["result_path"] = result_path
-        args_file, filename = tempfile.mkstemp(text=True)
-        with open(args_file, 'w') as args:
-            if run_config.get("coverage", False):
-                coverage_dir = os.path.join(result_path, "coverage")
-                run_config["coverage_dir"] = coverage_dir
-                args.write(" -Xclang -analyzer-config "
-                           "-Xclang record-coverage=%s " % coverage_dir)
-            conf_sources = [config["CodeChecker"], project, run_config]
-            args.write(collect_args("clang_sa_args", conf_sources))
 
-        tidy_args_file, tidy_args_filename = tempfile.mkstemp(text=True)
-        with open(tidy_args_file, 'w') as args:
-            conf_sources = [config["CodeChecker"], project, run_config]
-            args.write(collect_args("clang_tidy_args", conf_sources))
+        conf_sources = [config["CodeChecker"], project, run_config]
+        sa_args = collect_args("clang_sa_args", conf_sources)
+        if run_config.get("coverage", False):
+            coverage_dir = os.path.join(result_path, "coverage")
+            run_config["coverage_dir"] = coverage_dir
+            sa_args += (" -Xclang -analyzer-config "
+                        "-Xclang record-coverage=%s " % coverage_dir)
+        sa_args_file, sa_args_filename = make_args_file(sa_args)
+
+        tidy_args_file, tidy_args_filename = make_args_file(
+            collect_args("clang_tidy_args", conf_sources))
 
         tag = project.get("tag")
         name = project["name"]
@@ -358,8 +370,10 @@ def check_project(project: dict, project_dir: str, config: dict,
         cmd = ("CodeChecker analyze '%s' -j%d -o '%s' -q " +
                "--analyzers %s --capture-analysis-output") \
             % (json_path, num_jobs, result_path, analyzers)
-        cmd += " --saargs %s " % filename
-        cmd += " --tidyargs %s " % tidy_args_filename
+        if sa_args_file:
+            cmd += " --saargs %s " % sa_args_filename
+        if tidy_args_file:
+            cmd += " --tidyargs %s " % tidy_args_filename
         cmd += " --skip %s " % skippath
         cmd += collect_args("analyze_args", conf_sources)
         run_command(cmd, print_error=True, env=env)
