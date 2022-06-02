@@ -220,6 +220,7 @@ configuration values are optional.
     {
       "name": "original",
       "clang_sa_args": "",
+      "clang_tidy_args": "",
       "analyze_args": "",
       "store_args": "",
       "clang_path": ""
@@ -248,6 +249,9 @@ configurations. The global configuration entry applies to each project. A
 configuration entry local to a project will overwrite the global settings. Each
 configuration should have at least a name.
 * **clang_sa_args**: Arguments passed to `clang` (not `cc1`). The entry under
+`CodeChecker` applies to all projects and is appended to the final list of
+arguments. Entries under the projects apply to each configuration.
+* **clang_tidy_args**: Arguments passed to `clang-tidy`. The entry under
 `CodeChecker` applies to all projects and is appended to the final list of
 arguments. Entries under the projects apply to each configuration.
 * **analyze_args**: Arguments passed to the `CodeChecker analyze` command. It works
@@ -296,6 +300,54 @@ for a project. Each element in the list corresponds to a line in the generated s
 These scripts will not figure out the dependencies of a project. It is the
 user's responsibility to make sure that the projects in the configuration file
 can be compiled on the machine on which the experiments are run.
+
+Profiling _Clang-Tidy_ checks
+-----------------------------
+
+Clang-Tidy version 7.0 and onwards supports profiling each individual check
+executed, per translation unit. This can be useful to generate statistics when
+the performance of Tidy is in question. You can ask Clang-Tidy to generate
+an output by specifying the following extra arguments to the `clang_tidy_args`
+of the configuration:
+
+
+```json
+  "configurations": [
+    {
+      "name": "tidy-original",
+      "clang_tidy_args": "--enable-check-profile --store-check-profile=tidy-original"
+    }
+  ]
+```
+
+The parameter of the `--store-check-profile` **MUST** be the same as the name
+of the configuration. Additional options for configuring Clang SA or the entire
+analysis itself can be specified, profiling Clang-Tidy isn't mutually exclusive
+with the "normal" `run_experiments.py` features.
+
+Once configured appropriately, please execute `run_experiments.py` normally.
+After the analyses had concluded, execute `tidy_profiling_sum.py` with the same
+`--config` file and the `projects` directory, created by `run_experiments.py`
+as `--dir`.
+
+The second script, `tidy_profiling_sum.py` will collect and collate the results
+emitted by Tidy, and create `tidy_results.html` under the `--dir` directory that
+contains details about checks' execution time and graphs.
+
+### Configuration
+
+To specify a custom human-readable title for the generated charts, an optional
+`tidy_chart_title` can be given for each `configurations` entry:
+
+```json
+  "configurations": [
+    {
+      "name": "tidy-original",
+      "tidy_chart_title": "Tidy (stock)",
+      "clang_tidy_args": "--enable-check-profile --store-check-profile=tidy-original"
+    }
+  ]
+```
 
 Measuring bug path length statistics
 ------------------------------------
